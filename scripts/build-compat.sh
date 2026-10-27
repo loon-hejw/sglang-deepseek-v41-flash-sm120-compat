@@ -9,7 +9,7 @@ tag=$(jq -r .candidate_tag release.json)
 image="local/sglang-deepseek-v41-flash-sm120-compat:${tag}"
 stack="local/sglang-deepseek-v41-flash-sm120-compat-stack:${stack_key}"
 revision=$(git rev-parse HEAD)
-base_cmd=(docker buildx build --platform linux/amd64 --load -f Containerfile.stack -t "$stack" .)
+base_cmd=(docker buildx build --platform linux/amd64 --load -f Containerfile.stack --build-arg "FLASHINFER_KEY=$flashinfer_key" -t "$stack" .)
 serve_cmd=(docker buildx build --platform linux/amd64 --load -f Containerfile --build-arg "STACK_IMAGE=$stack" --build-arg IMAGE_SOURCE=local/sglang-deepseek-v41-flash-sm120-compat --build-arg "IMAGE_SOURCE_REVISION=$revision" -t "$image" .)
 if [[ "${1:-}" == --dry-run ]]; then
   printf '%q ' "${base_cmd[@]}"; printf '\n'

@@ -83,7 +83,12 @@
     },
     "build_entrypoint": {
       "status": "dry_run_passed",
-      "image": "local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.1"
+      "image": "local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.1",
+      "required_arguments_checked": [
+        "FLASHINFER_KEY matches stack.json",
+        "STACK_IMAGE matches computed stack key",
+        "local load only; no push"
+      ]
     },
     "gpu_probe_entrypoint": {
       "status": "dry_run_and_offline_SSE_checks_passed",

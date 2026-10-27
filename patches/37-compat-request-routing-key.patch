@@ -1,0 +1,12 @@
+diff --git a/python/sglang/srt/managers/io_struct.py b/python/sglang/srt/managers/io_struct.py
+index 3148deb..6d88918 100644
+--- a/python/sglang/srt/managers/io_struct.py
++++ b/python/sglang/srt/managers/io_struct.py
+@@ -1035,6 +1035,7 @@ class GenerateReqInput:
+             conversation_id=self.conversation_id,
+             http_worker_ipc=self.http_worker_ipc,
+             require_reasoning=self.require_reasoning,
++            routing_key=self.routing_key,
+             max_thinking_tokens=self.max_thinking_tokens,
+             priority=self.priority,
+             extra_key=self.extra_key[i] if self.extra_key is not None else None,

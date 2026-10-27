@@ -1,0 +1,7 @@
+.git
+.cache
+.venv
+artifacts
+**/__pycache__
+*.bundle
+compat/upstream-0731

@@ -1,0 +1,43 @@
+diff --git a/python/sglang/srt/layers/deep_gemm_wrapper/compile_utils.py b/python/sglang/srt/layers/deep_gemm_wrapper/compile_utils.py
+index d4f6c86..47d90fc 100644
+--- a/python/sglang/srt/layers/deep_gemm_wrapper/compile_utils.py
++++ b/python/sglang/srt/layers/deep_gemm_wrapper/compile_utils.py
+@@ -192,6 +192,16 @@ def _maybe_compile_deep_gemm_one_type_all(
+             )
+ 
+ 
++def _select_max_m_within_budget(kernel_type, m_list, n, k, num_groups, memory_budget):
++    """Largest supported warmup shape that fits; None if even the smallest cannot."""
++    for max_m in sorted(set(m_list), reverse=True):
++        if _BaseWarmupExecutor.get_memory_requirement(
++            kernel_type, max_m=max_m, n=n, k=k, num_groups=num_groups
++        ) <= memory_budget:
++            return max_m
++    return None
++
++
+ # NOTE(alcanderian): get_num_sms should be change when 2-batch-overlap is introduced
+ def _compile_deep_gemm_one_type_all(
+     kernel_type: DeepGemmKernelType,
+@@ -225,15 +235,12 @@ def _compile_deep_gemm_one_type_all(
+             f"Required memory for warmup: {required_memory}GB, Available memory: {memory_budget}GB"
+         )
+         if memory_budget < required_memory:
+-            # TODO: Maybe compute the max_m based on the memory budget
+-            while (
+-                _BaseWarmupExecutor.get_memory_requirement(
+-                    kernel_type, max_m=max_m, n=n, k=k, num_groups=num_groups
+-                )
+-                > memory_budget
+-                and max_m > 2048
+-            ):
+-                max_m = max_m // 2
++            max_m = _select_max_m_within_budget(
++                kernel_type, m_list, n, k, num_groups, memory_budget
++            )
++            if max_m is None:
++                logger.warning("Skipping DeepGEMM warmup: smallest shape exceeds available memory")
++                return
+             logger.warning(
+                 f"Available memory {memory_budget}GB is less than required memory {required_memory}GB for warmup, reducing max_m to {max_m} to avoid out of memory"
+             )

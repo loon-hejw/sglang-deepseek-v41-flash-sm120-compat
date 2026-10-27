@@ -1,0 +1,133 @@
+diff --git a/python/sglang/srt/sampling/penaltylib/frequency_penalty.py b/python/sglang/srt/sampling/penaltylib/frequency_penalty.py
+index 5abeaf7..71602ec 100644
+--- a/python/sglang/srt/sampling/penaltylib/frequency_penalty.py
++++ b/python/sglang/srt/sampling/penaltylib/frequency_penalty.py
+@@ -43,6 +43,11 @@ class BatchedFrequencyPenalizer(_BatchedPenalizer):
+             src=self.frequency_penalties,
+         )
+ 
++    def _cumulate_output_tokens_indexed(self, rows: torch.Tensor, output_ids: torch.Tensor):
++        self.cumulated_frequency_penalties.index_put_(
++            (rows, output_ids), self.frequency_penalties[rows, 0], accumulate=True
++        )
++
+     def _apply(self, logits: torch.Tensor) -> torch.Tensor:
+         logits.sub_(self.cumulated_frequency_penalties)
+ 
+diff --git a/python/sglang/srt/sampling/penaltylib/min_new_tokens.py b/python/sglang/srt/sampling/penaltylib/min_new_tokens.py
+index 51ad26c..e2bb982 100644
+--- a/python/sglang/srt/sampling/penaltylib/min_new_tokens.py
++++ b/python/sglang/srt/sampling/penaltylib/min_new_tokens.py
+@@ -82,6 +82,11 @@ class BatchedMinNewTokensPenalizer(_BatchedPenalizer):
+     def _cumulate_output_tokens(self, output_ids: torch.Tensor):
+         self.len_output_tokens += 1
+ 
++    def _cumulate_output_tokens_indexed(self, rows: torch.Tensor, output_ids: torch.Tensor):
++        self.len_output_tokens.index_add_(
++            0, rows, torch.ones((rows.numel(), 1), dtype=self.len_output_tokens.dtype, device=rows.device)
++        )
++
+     def _apply(self, logits: torch.Tensor):
+         # Boolean-mask indexing (logits[mask]) is data-dependent and forces a
+         # device-to-host sync every decode step; torch.where is a plain
+diff --git a/python/sglang/srt/sampling/penaltylib/orchestrator.py b/python/sglang/srt/sampling/penaltylib/orchestrator.py
+index 5cdbe83..c34f2ce 100644
+--- a/python/sglang/srt/sampling/penaltylib/orchestrator.py
++++ b/python/sglang/srt/sampling/penaltylib/orchestrator.py
+@@ -27,6 +27,7 @@ class BatchedPenalizerOrchestrator:
+             pen_is_required = penalizer.prepare_if_required()
+             is_required |= pen_is_required
+         self.is_required = is_required
++        self._spec_output_lengths = {}
+ 
+     @property
+     def batch(self) -> ScheduleBatch | None:
+@@ -52,6 +53,30 @@ class BatchedPenalizerOrchestrator:
+         for penalizer in self.penalizers.values():
+             penalizer.cumulate_output_tokens(output_ids=output_ids)
+ 
++    def sync_spec_output_tokens(self):
++        """Accumulate newly committed CPU request history, not proposed tokens.
++
++        Cursors follow request ids across filter/merge. A newly constructed
++        orchestrator (including retraction) replays history into fresh tensors.
++        No token is charged for an empty output, or twice when a batch is reused.
++        """
++        rows, tokens, lengths = [], [], {}
++        for row, req in enumerate(self.reqs()):
++            end = len(req.output_ids)
++            start = self._spec_output_lengths.get(req.rid, 0)
++            if start > end:
++                raise ValueError("Committed output history shrank within a penalizer batch")
++            rows.extend([row] * (end - start))
++            tokens.extend(req.output_ids[start:end])
++            lengths[req.rid] = end
++        if tokens:
++            rows_t = torch.tensor(rows, dtype=torch.int64, device=self.device)
++            tokens_t = torch.tensor(tokens, dtype=torch.int64, device=self.device)
++            for penalizer in self.penalizers.values():
++                if penalizer.is_prepared():
++                    penalizer._cumulate_output_tokens_indexed(rows_t, tokens_t)
++        self._spec_output_lengths = lengths
++
+     def apply(self, logits: torch.Tensor, repeat: Optional[int] = None):
+         """
+         Apply all penalizers to the logits in-place.
+@@ -134,6 +159,7 @@ class BatchedPenalizerOrchestrator:
+         for penalizer in self.penalizers.values():
+             penalizer.teardown()
+         self.penalizers.clear()
++        self._spec_output_lengths.clear()
+         # Break reference to ScheduleBatch
+         self._batch_ref = None
+         self.is_required = False
+@@ -160,6 +186,7 @@ class BatchedPenalizerOrchestrator:
+             return
+ 
+         self.is_required = True
++        self._spec_output_lengths.update(their._spec_output_lengths)
+         for penalizer, their_penalizer in their.penalizers.items():
+             self.penalizers[penalizer].merge(their_penalizer)
+ 
+diff --git a/python/sglang/srt/sampling/penaltylib/presence_penalty.py b/python/sglang/srt/sampling/penaltylib/presence_penalty.py
+index 5d6004e..f49dd9d 100644
+--- a/python/sglang/srt/sampling/penaltylib/presence_penalty.py
++++ b/python/sglang/srt/sampling/penaltylib/presence_penalty.py
+@@ -43,6 +43,9 @@ class BatchedPresencePenalizer(_BatchedPenalizer):
+             src=self.presence_penalties,
+         )
+ 
++    def _cumulate_output_tokens_indexed(self, rows: torch.Tensor, output_ids: torch.Tensor):
++        self.cumulated_presence_penalties[rows, output_ids] = self.presence_penalties[rows, 0]
++
+     def _apply(self, logits: torch.Tensor) -> torch.Tensor:
+         logits.sub_(self.cumulated_presence_penalties)
+ 
+diff --git a/python/sglang/srt/sampling/penaltylib/repetition_penalty.py b/python/sglang/srt/sampling/penaltylib/repetition_penalty.py
+index 7d58918..0ab4998 100644
+--- a/python/sglang/srt/sampling/penaltylib/repetition_penalty.py
++++ b/python/sglang/srt/sampling/penaltylib/repetition_penalty.py
+@@ -56,6 +56,9 @@ class BatchedRepetitionPenalizer(_BatchedPenalizer):
+             src=self.repetition_penalties,
+         )
+ 
++    def _cumulate_output_tokens_indexed(self, rows: torch.Tensor, output_ids: torch.Tensor):
++        self.cumulated_repetition_penalties[rows, output_ids] = self.repetition_penalties[rows, 0]
++
+     def _apply(self, logits: torch.Tensor) -> torch.Tensor:
+         apply_scaling_penalties(logits, self.cumulated_repetition_penalties)
+         return logits
+diff --git a/python/sglang/srt/speculative/spec_utils.py b/python/sglang/srt/speculative/spec_utils.py
+index 59b7c50..62a3ec7 100644
+--- a/python/sglang/srt/speculative/spec_utils.py
++++ b/python/sglang/srt/speculative/spec_utils.py
+@@ -1200,6 +1200,9 @@ def spec_prepare_for_decode(batch: ScheduleBatch) -> None:
+             max_speculative_num_draft_tokens(),
+         )
+     if batch.spec_algorithm.is_dflash_family():
++        penalizer = batch.sampling_info.penalizer_orchestrator
++        if penalizer is not None and penalizer.is_required:
++            penalizer.sync_spec_output_tokens()
+         batch.spec_info.prepare_for_decode(batch)
+     elif batch.spec_algorithm.is_uno():
+         from sglang.srt.speculative.uno_info import UnoDraftInput

@@ -1,0 +1,16 @@
+diff --git a/python/sglang/kernels/ops/speculative/dspark/dspark_draft_model.py b/python/sglang/kernels/ops/speculative/dspark/dspark_draft_model.py
+index 2890366..1485ca5 100644
+--- a/python/sglang/kernels/ops/speculative/dspark/dspark_draft_model.py
++++ b/python/sglang/kernels/ops/speculative/dspark/dspark_draft_model.py
+@@ -137,7 +137,10 @@ def _markov_greedy_combine_kernel(
+     best = tl.max(vals, axis=0)
+     # Lowest global index among equal-valued tiles, matching torch.argmax.
+     cand = tl.where(vals == best, idxs, _IDX_SENTINEL)
+-    tl.store(next_tokens_ptr + row, tl.min(cand, axis=0).to(tl.int64))
++    next_token = tl.min(cand, axis=0)
++    # Degenerate (NaN) tile scores must never become an out-of-vocabulary id.
++    next_token = tl.where(next_token == _IDX_SENTINEL, 0, next_token)
++    tl.store(next_tokens_ptr + row, next_token.to(tl.int64))
+ 
+ 
+ def markov_greedy_step_triton(

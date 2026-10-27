@@ -1,3 +1,7 @@
+# Local compatibility candidate v0.4.4-rc.1
+
+Ports missing 0731 correctness fixes onto the pinned V4.1 source: speculative penalties and committed-token accounting, tool argument completion, reasoning-marker fragments, routing-key preservation, warmup memory budgeting and bounded draft token ids. Adds CPU regressions and reproducible local build/validation entrypoints. This candidate is not built or GPU-validated; no performance improvement is claimed. Original contributor references are retained in `compat/migration.json`.
+
 # Changelog
 
 ## v0.4.3 (stable; 2026-10-19)

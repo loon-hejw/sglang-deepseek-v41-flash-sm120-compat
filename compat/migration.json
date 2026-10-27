@@ -1,0 +1,742 @@
+{
+  "schema": 1,
+  "old_project": "https://github.com/ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000",
+  "old_commit": "79bbc001db042fc85dc2b15e4175210eaec3e78e",
+  "new_project": "https://github.com/ormandj/sglang-deepseek-v41-flash-sm120",
+  "new_commit": "11c525d0234dc25e167e4d6bb0fe9fe757762f5f",
+  "scope": "V4.1 Flash 1017 / SM120 / TP4 DP1; correctness ports, not restoration of old optional features",
+  "status_counts": {
+    "ported": 7,
+    "already_equivalent": 22,
+    "not_applicable": 4
+  },
+  "gpu_validation": "not_run",
+  "entries": [
+    {
+      "patch": "pr32332-notest.diff",
+      "status": "already_equivalent",
+      "reason": "新版 DSML 参数使用严格 json.loads，错误路径清空缓冲并 fail closed；旧 MalformedJSON 捕获分支已被替代。",
+      "original_sha256": "fd75064166cf6a8e2f2fb526280b2a9283a09396ccc15f19e65a91bd772bdda8",
+      "source_url": "https://github.com/ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000/blob/79bbc001db042fc85dc2b15e4175210eaec3e78e/patches/pr32332-notest.diff",
+      "ported_patch_ids": [],
+      "evidence": [
+        {
+          "path": "python/sglang/srt/function_call/deepseekv32_detector.py",
+          "anchor": "except (json.JSONDecodeError, ValueError)",
+          "line": 183,
+          "file_sha256": "90d58906544f14ddd264ca479351de47c611dae288b0eb9c1cb5b3ec8b772c1c"
+        },
+        {
+          "path": "python/sglang/srt/function_call/deepseekv32_detector.py",
+          "anchor": "# Fail closed: drop the buffer",
+          "line": 367,
+          "file_sha256": "90d58906544f14ddd264ca479351de47c611dae288b0eb9c1cb5b3ec8b772c1c"
+        }
+      ],
+      "gpu_validation": "not_run"
+    },
+    {
+      "patch": "pr32167-notest.diff",
+      "status": "ported",
+      "reason": "通用 JSON 工具检测器仍会漏记最终名称分片中的完整参数；服务层只补发最后一个工具。迁移全部收尾并保证重复调用不重发。",
+      "original_sha256": "8dfb286f01fecb7924e98ca18f0eb9cc7a6bf19c63453d3149b940be750151dc",
+      "source_url": "https://github.com/ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000/blob/79bbc001db042fc85dc2b15e4175210eaec3e78e/patches/pr32167-notest.diff",
+      "ported_patch_ids": [
+        "compat-tool-final-flush"
+      ],
+      "evidence": [
+        {
+          "path": "python/sglang/srt/function_call/base_format_detector.py",
+          "anchor": "if is_current_complete and \"arguments\" in current_tool_call",
+          "line": 270,
+          "file_sha256": "f7d95b1f804fde59b37f3455671c584bb1828b0ebf5ab35b7bee433d6af69943"
+        },
+        {
+          "path": "python/sglang/srt/entrypoints/openai/serving_chat.py",
+          "anchor": "for tool_index, call in enumerate(detector.prev_tool_call_arr)",
+          "line": 3256,
+          "file_sha256": "ef5b090e0a5314948c91a0f11fadc915befb995bd124a807207f858a88633226"
+        }
+      ],
+      "gpu_validation": "not_run"
+    },
+    {
+      "patch": "pr31009-notest.diff",
+      "status": "ported",
+      "reason": "推理状态的尾部标签暂存已存在，普通正文状态仍缺失；只补齐后者，复用当前结束刷新逻辑。",
+      "original_sha256": "0536a16fe178ba9ccf55d096b00c6f22ddc1950e7dc7296d619e65b51b2e4401",
+      "source_url": "https://github.com/ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000/blob/79bbc001db042fc85dc2b15e4175210eaec3e78e/patches/pr31009-notest.diff",
+      "ported_patch_ids": [
+        "compat-reasoning-prefix"
+      ],
+      "evidence": [
+        {
+          "path": "python/sglang/srt/parser/reasoning_parser.py",
+          "anchor": "holdback = max(",
+          "line": 280,
+          "file_sha256": "92244bed488df33b157fea04aee2730bd56b0054d076f0f7ed4ce791ff002b32"
+        },
+        {
+          "path": "python/sglang/srt/parser/reasoning_parser.py",
+          "anchor": "normal_text=current_text[: len(current_text) - holdback]",
+          "line": 299,
+          "file_sha256": "92244bed488df33b157fea04aee2730bd56b0054d076f0f7ed4ce791ff002b32"
+        }
+      ],
+      "gpu_validation": "not_run"
+    },
+    {
+      "patch": "dspark-sm120-decode-dispatch.diff",
+      "status": "already_equivalent",
+      "reason": "旧固定 topk 调度被当前 FlashInfer paged attention 路径替代，split 数按实际 topk 计算；不向新版恢复旧私有 dispatch API。",
+      "original_sha256": "573fe45d2714a2fb8f4158efd757a84bad81679a56ab691d1c587c43824aade6",
+      "source_url": "https://github.com/ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000/blob/79bbc001db042fc85dc2b15e4175210eaec3e78e/patches/dspark-sm120-decode-dispatch.diff",
+      "ported_patch_ids": [],
+      "evidence": [
+        {
+          "path": "python/sglang/kernels/ops/attention/flash_mla_sm120.py",
+          "anchor": "num_splits = (topk + _BI - 1)",
+          "line": 647,
+          "file_sha256": "4fc85f6a96c1ff75c741da8cb6c3de254b8a1d7ade5b431b688e98546f2bdbdd"
+        },
+        {
+          "path": "python/sglang/kernels/ops/attention/flash_mla_sm120.py",
+          "anchor": "_sparse_mla_sm120_paged_attention(",
+          "line": 252,
+          "file_sha256": "4fc85f6a96c1ff75c741da8cb6c3de254b8a1d7ade5b431b688e98546f2bdbdd"
+        }
+      ],
+      "gpu_validation": "not_run"
+    },
+    {
+      "patch": "pr32320-notest.diff",
+      "status": "already_equivalent",
+      "reason": "分页转换已按 touched_indices 选择被访问页，且当前原有补丁 06 固定捕获缓冲生命周期。",
+      "original_sha256": "d70df01ffb405e830fbfa638c2a8c3aaf3709d557692bf453a0793f3856716a4",
+      "source_url": "https://github.com/ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000/blob/79bbc001db042fc85dc2b15e4175210eaec3e78e/patches/pr32320-notest.diff",
+      "ported_patch_ids": [],
+      "evidence": [
+        {
+          "path": "python/sglang/kernels/ops/attention/flash_mla_sm120.py",
+          "anchor": "touched_indices=idx",
+          "line": 236,
+          "file_sha256": "4fc85f6a96c1ff75c741da8cb6c3de254b8a1d7ade5b431b688e98546f2bdbdd"
+        }
+      ],
+      "gpu_validation": "not_run"
+    },
+    {
+      "patch": "pr33098-notest.diff",
+      "status": "already_equivalent",
+      "reason": "新版草稿前向同步已设置 original_global_num_tokens_cpu 及更名后的 global_num_token_non_padded 元数据。",
+      "original_sha256": "16c2ffa8d8766305f2bb62ef75e2d356602ab4d1b89c5fa3bd1db0539292776f",
+      "source_url": "https://github.com/ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000/blob/79bbc001db042fc85dc2b15e4175210eaec3e78e/patches/pr33098-notest.diff",
+      "ported_patch_ids": [],
+      "evidence": [
+        {
+          "path": "python/sglang/srt/speculative/dspark_components/dspark_draft.py",
+          "anchor": "forward_batch.original_global_num_tokens_cpu = batch.global_num_tokens",
+          "line": 612,
+          "file_sha256": "e781cf91a3738b389328ca8c582056b07ef19693719d986bd97fa8a7efa41c98"
+        },
+        {
+          "path": "python/sglang/srt/speculative/dspark_components/dspark_draft.py",
+          "anchor": "forward_batch.global_num_token_non_padded_cpu = num_tokens",
+          "line": 627,
+          "file_sha256": "e781cf91a3738b389328ca8c582056b07ef19693719d986bd97fa8a7efa41c98"
+        }
+      ],
+      "gpu_validation": "not_run"
+    },
+    {
+      "patch": "pr32467-notest.diff",
+      "status": "already_equivalent",
+      "reason": "压缩计划内核迁至 kernels/jit；共享 min/max 写入与消费者之间已有第二次 __syncthreads。",
+      "original_sha256": "010b7ac34e4f8ec7101c41f41be87ee7f1e6c70b2f1138de9c82154d61e8afca",
+      "source_url": "https://github.com/ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000/blob/79bbc001db042fc85dc2b15e4175210eaec3e78e/patches/pr32467-notest.diff",
+      "ported_patch_ids": [],
+      "evidence": [
+        {
+          "path": "python/sglang/kernels/jit/csrc/deepseek_v4/c_plan.cuh",
+          "anchor": "s_min_extend = warp::reduce_min(warp_min[lane_id]);\n  }\n  __syncthreads();",
+          "line": 155,
+          "file_sha256": "ece03178ec400098a7e21f569f5aba00f84f55dc763c44f7ba3d27df74071ecb"
+        }
+      ],
+      "gpu_validation": "not_run"
+    },
+    {
+      "patch": "pr32183-notest.diff",
+      "status": "already_equivalent",
+      "reason": "旧 verify_width 显式参数方案由环尺寸推导 mtp_pad 替代；ragged planner 同时限制真实 token 范围。",
+      "original_sha256": "9c23fb6ee386fb2c6189769411de85a8156dbe92051caf1e4b3a04f6bd9df35d",
+      "source_url": "https://github.com/ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000/blob/79bbc001db042fc85dc2b15e4175210eaec3e78e/patches/pr32183-notest.diff",
+      "ported_patch_ids": [],
+      "evidence": [
+        {
+          "path": "python/sglang/kernels/jit/csrc/deepseek_v4/c_plan.cuh",
+          "anchor": "const auto mtp_pad = ring_size > window_size ? ring_size - window_size + 2 : 0;",
+          "line": 510,
+          "file_sha256": "ece03178ec400098a7e21f569f5aba00f84f55dc763c44f7ba3d27df74071ecb"
+        },
+        {
+          "path": "python/sglang/kernels/jit/csrc/deepseek_v4/c_plan.cuh",
+          "anchor": "const uint32_t num_real_q = params.batch_size * E;",
+          "line": 171,
+          "file_sha256": "ece03178ec400098a7e21f569f5aba00f84f55dc763c44f7ba3d27df74071ecb"
+        }
+      ],
+      "gpu_validation": "not_run"
+    },
+    {
+      "patch": "pr33531-notest.diff",
+      "status": "ported",
+      "reason": "旧字段仍存在，且 DSPARK/DFLASH 准备阶段未推进惩罚。迁移当前字段、两个跳过门禁，并按已提交输出累计，避免旧补丁每步只算一个 token 的近似。",
+      "original_sha256": "97693e5d559f7b380068cb72d43b688f7eaa0d67009696d0c0d542aa424745f3",
+      "source_url": "https://github.com/ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000/blob/79bbc001db042fc85dc2b15e4175210eaec3e78e/patches/pr33531-notest.diff",
+      "ported_patch_ids": [
+        "compat-verify-penalties",
+        "compat-committed-penalty-state"
+      ],
+      "evidence": [
+        {
+          "path": "python/sglang/srt/speculative/dflash_utils.py",
+          "anchor": "acc_additive_penalties",
+          "line": 251,
+          "file_sha256": "a381f887e6f38043d8630c0df02e6021c9d50e75443c71e8851df10897e4fa48"
+        },
+        {
+          "path": "python/sglang/srt/speculative/spec_utils.py",
+          "anchor": "penalizer.sync_spec_output_tokens()",
+          "line": 1205,
+          "file_sha256": "b87398ca30ac11d5bb3fb3bd6f90f73be67a73d8f56371799bf89cbf2f51e7f6"
+        }
+      ],
+      "gpu_validation": "not_run"
+    },
+    {
+      "patch": "dsv4-store-padding-guard.diff",
+      "status": "not_applicable",
+      "reason": "旧补丁针对 V4 KV/索引存储，假定 index=0 为保留槽。V4.1 使用独立存储和请求寻址的统一 KV；不能把 index>0 守卫直接移植到该布局。GPU padding/graph 场景仍列为待验收，不宣称新版所有 padding 路径已通过。",
+      "original_sha256": "64f05480af03fe6dc1a9a4008bbd6d3fa2f9feaf9776b50726d01c4fa1557186",
+      "source_url": "https://github.com/ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000/blob/79bbc001db042fc85dc2b15e4175210eaec3e78e/patches/dsv4-store-padding-guard.diff",
+      "ported_patch_ids": [],
+      "evidence": [
+        {
+          "path": "python/sglang/kernels/jit/csrc/deepseek_v4/store.cuh",
+          "anchor": "fused_store_flashmla_cache_v41",
+          "line": 97,
+          "file_sha256": "d88525a5cb405c586aa149c3d47e43580a909a453d846062a3ebd14d9a1884ba"
+        },
+        {
+          "path": "python/sglang/srt/mem_cache/deepseek_v4_memory_pool.py",
+          "anchor": "req_pool_indices * swa_window + pos % swa_window",
+          "line": 849,
+          "file_sha256": "95398355cabf8153a2d3d2d8c2cb398635f5665a6da826ca22ef8df72e346211"
+        }
+      ],
+      "gpu_validation": "not_run"
+    },
+    {
+      "patch": "pr31017-notest.diff",
+      "status": "already_equivalent",
+      "reason": "退化 MoE top-k 归一化实现与对应 upstream 单元测试均已存在。",
+      "original_sha256": "db041c0791d63c75f50f5a52e3d75ed7a8aeeff775040feb1561a9e1484a52f3",
+      "source_url": "https://github.com/ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000/blob/79bbc001db042fc85dc2b15e4175210eaec3e78e/patches/pr31017-notest.diff",
+      "ported_patch_ids": [],
+      "evidence": [
+        {
+          "path": "python/sglang/srt/layers/moe/topk.py",
+          "anchor": "renormalize",
+          "line": 201,
+          "file_sha256": "2cb9e65373e712301639b27cd76a64edad1a805757d29d8272311d1b03569145"
+        },
+        {
+          "path": "test/registered/moe/test_topk_renormalize_degenerate.py",
+          "anchor": "degenerate",
+          "line": 1,
+          "file_sha256": "ea95a11bef64bcc2c185a6433a3003b3afd9281f6d7387f19022db3a58307bb3"
+        }
+      ],
+      "gpu_validation": "not_run"
+    },
+    {
+      "patch": "pr32277-notest.diff",
+      "status": "ported",
+      "reason": "row-index 容量限制和拒绝采样非法 q 防护已存在；新版 Markov sampler 的 NaN 选择替代旧 multinomial fallback。仅迁移仍缺失的 greedy tile 合并 sentinel 回落。",
+      "original_sha256": "f6f8e45cf39f5c7a480c3a06f67346b68e81de1fd9fe02824310a48ea927ca3e",
+      "source_url": "https://github.com/ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000/blob/79bbc001db042fc85dc2b15e4175210eaec3e78e/patches/pr32277-notest.diff",
+      "ported_patch_ids": [
+        "compat-draft-sentinel"
+      ],
+      "evidence": [
+        {
+          "path": "python/sglang/kernels/ops/speculative/dspark/dspark_verify_window.py",
+          "anchor": "assert bs <= 1 << (_SEARCH_NBITS - 1)",
+          "line": 327,
+          "file_sha256": "6faf51d4c8756e250b0afb85b5938445804b521511245c46631ca958a7372469"
+        },
+        {
+          "path": "python/sglang/kernels/ops/speculative/reject_sampling.py",
+          "anchor": "(q_val >= 0.0) & (q_val <= 1.0)",
+          "line": 194,
+          "file_sha256": "62caac17755082e2f89b1c81a743f55c81c31b7ff0485b7533c0267e72e9262c"
+        },
+        {
+          "path": "python/sglang/kernels/ops/speculative/dspark/markov_sample.py",
+          "anchor": "has_nan",
+          "line": 134,
+          "file_sha256": "0c6bd62c0eb8455c5201ebc45dd31d34db7ea77bc49acf7d3f9ddf96ce04ea99"
+        },
+        {
+          "path": "python/sglang/kernels/ops/speculative/dspark/dspark_draft_model.py",
+          "anchor": "next_token == _IDX_SENTINEL",
+          "line": 142,
+          "file_sha256": "f59c3b41b02ba3ff57af03cfa65690db289bedf3be60c10821e9e3e05dd8bd9b"
+        }
+      ],
+      "gpu_validation": "not_run"
+    },
+    {
+      "patch": "pr32183-hipradix-completion.diff",
+      "status": "already_equivalent",
+      "reason": "旧 hip_radix 额外传 verify_width 的缺口随统一环尺寸计划接口被替代；不恢复过时参数。",
+      "original_sha256": "aedc6688b1eaff380db531f056e1a7109cf7085a1755058ec4169ecc82be4c6c",
+      "source_url": "https://github.com/ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000/blob/79bbc001db042fc85dc2b15e4175210eaec3e78e/patches/pr32183-hipradix-completion.diff",
+      "ported_patch_ids": [],
+      "evidence": [
+        {
+          "path": "python/sglang/srt/mem_cache/deepseek_v4_memory_pool.py",
+          "anchor": "def get_compress_state_write_pad",
+          "line": 119,
+          "file_sha256": "95398355cabf8153a2d3d2d8c2cb398635f5665a6da826ca22ef8df72e346211"
+        },
+        {
+          "path": "python/sglang/kernels/jit/csrc/deepseek_v4/c_plan.cuh",
+          "anchor": "const auto mtp_pad = ring_size > window_size ? ring_size - window_size + 2 : 0;",
+          "line": 510,
+          "file_sha256": "ece03178ec400098a7e21f569f5aba00f84f55dc763c44f7ba3d27df74071ecb"
+        }
+      ],
+      "gpu_validation": "not_run"
+    },
+    {
+      "patch": "dsv4-streaming-preamble-fix.diff",
+      "status": "already_equivalent",
+      "reason": "V4.1 继承的新 DSML 检测器已经保留前置正文、裸 invoke、部分标签，且 finish 会处理截断片段。",
+      "original_sha256": "e97156ca5e6933835258603646a24fb84f0b946a0981d28ff437144ca9fc1631",
+      "source_url": "https://github.com/ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000/blob/79bbc001db042fc85dc2b15e4175210eaec3e78e/patches/dsv4-streaming-preamble-fix.diff",
+      "ported_patch_ids": [],
+      "evidence": [
+        {
+          "path": "python/sglang/srt/function_call/deepseekv32_detector.py",
+          "anchor": "normal_text=preamble, calls=all_calls",
+          "line": 363,
+          "file_sha256": "90d58906544f14ddd264ca479351de47c611dae288b0eb9c1cb5b3ec8b772c1c"
+        },
+        {
+          "path": "python/sglang/srt/function_call/deepseekv41_detector.py",
+          "anchor": "class DeepSeekV41Detector",
+          "line": 6,
+          "file_sha256": "a69058331651d68fb913ff71f580b0a8b7b5f36edec0968cc9f265b74f5df106"
+        }
+      ],
+      "gpu_validation": "not_run"
+    },
+    {
+      "patch": "dsv4-c4-ring-depth-scale.diff",
+      "status": "not_applicable",
+      "reason": "该补丁专用于旧模型 ratio=4 压缩环；锁定 V4.1 权重使用 ratio=1/2 路径，其 ratio=2 环已按 draft 数扩展。不修改仍供旧模型使用的 C4 路径。",
+      "original_sha256": "ae86737ea8d9b7110538bb115fa50d9530d39cc56d2f57e1dbed70e8a40a8637",
+      "source_url": "https://github.com/ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000/blob/79bbc001db042fc85dc2b15e4175210eaec3e78e/patches/dsv4-c4-ring-depth-scale.diff",
+      "ported_patch_ids": [],
+      "evidence": [
+        {
+          "path": "python/sglang/srt/mem_cache/deepseek_v4_memory_pool.py",
+          "anchor": "if compress_ratio == 2:",
+          "line": 65,
+          "file_sha256": "95398355cabf8153a2d3d2d8c2cb398635f5665a6da826ca22ef8df72e346211"
+        },
+        {
+          "path": "python/sglang/srt/mem_cache/deepseek_v4_memory_pool.py",
+          "anchor": "return 1 << (num_draft_tokens + 1).bit_length()",
+          "line": 70,
+          "file_sha256": "95398355cabf8153a2d3d2d8c2cb398635f5665a6da826ca22ef8df72e346211"
+        }
+      ],
+      "gpu_validation": "not_run"
+    },
+    {
+      "patch": "pr29927-notest.diff",
+      "status": "already_equivalent",
+      "reason": "SM120 prefill/页元数据与 mHC 已经过上游重构及当前补丁集优化；hc_combine 使用专用 Triton 内核，保留当前量化及依赖栈，不恢复 v0.5.16 的 dispatch/env 覆盖。",
+      "original_sha256": "572743cc8034d5ea85901d59c94ff01a3f02a5da227bcc535ce5da7d9f60f8ad",
+      "source_url": "https://github.com/ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000/blob/79bbc001db042fc85dc2b15e4175210eaec3e78e/patches/pr29927-notest.diff",
+      "ported_patch_ids": [],
+      "evidence": [
+        {
+          "path": "python/sglang/kernels/ops/layernorm/mhc.py",
+          "anchor": "def _hc_combine_kernel",
+          "line": 2158,
+          "file_sha256": "ebc2ef4c650ddbf4daa2c7f0e6866997c33f78b4e7d90abe9b4d00fbad5ecbaf"
+        },
+        {
+          "path": "python/sglang/kernels/ops/layernorm/mhc.py",
+          "anchor": "_hc_combine_kernel[",
+          "line": 2809,
+          "file_sha256": "ebc2ef4c650ddbf4daa2c7f0e6866997c33f78b4e7d90abe9b4d00fbad5ecbaf"
+        },
+        {
+          "path": "python/sglang/kernels/jit/csrc/deepseek_v4/paged_mqa_metadata.cuh",
+          "anchor": "batch-size-adaptive dispatch",
+          "line": 1,
+          "file_sha256": "77168812edde134a14d98f9b6a24a140cf391c5c101addf07e716c7b02270227"
+        },
+        {
+          "path": "python/sglang/kernels/ops/attention/flash_mla_sm120.py",
+          "anchor": "_sparse_mla_sm120_paged_attention(",
+          "line": 252,
+          "file_sha256": "4fc85f6a96c1ff75c741da8cb6c3de254b8a1d7ade5b431b688e98546f2bdbdd"
+        }
+      ],
+      "gpu_validation": "not_run"
+    },
+    {
+      "patch": "pr31170-notest.diff",
+      "status": "not_applicable",
+      "reason": "旧补丁新增 prefix_affinity 调度功能，当前 V4.1 TP4/DP1 配方无该方法。完整移植新调度功能会扩大 API 与部署拓扑范围；不引入该特性，也不修改默认路由策略。",
+      "original_sha256": "ba1003131a8613fb3de914381172b72a56f509a7edf5e5f20d65b50626d72ae7",
+      "source_url": "https://github.com/ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000/blob/79bbc001db042fc85dc2b15e4175210eaec3e78e/patches/pr31170-notest.diff",
+      "ported_patch_ids": [],
+      "evidence": [
+        {
+          "path": "python/sglang/srt/managers/data_parallel_controller.py",
+          "anchor": "class LoadBalanceMethod(Enum)",
+          "line": 104,
+          "file_sha256": "734640547521a65f63bf6f8166b430ca3896fed77e9ba84307977390d76db0d6"
+        },
+        {
+          "path": "python/sglang/srt/managers/data_parallel_controller.py",
+          "anchor": "TOTAL_REQUESTS = auto()",
+          "line": 109,
+          "file_sha256": "734640547521a65f63bf6f8166b430ca3896fed77e9ba84307977390d76db0d6"
+        }
+      ],
+      "gpu_validation": "not_run"
+    },
+    {
+      "patch": "pr31835-notest.diff",
+      "status": "already_equivalent",
+      "reason": "prefill delayer 在预算检查之后协商，chunked 请求路径显式报告可 prefill，旧增量代码已存在。",
+      "original_sha256": "3ef7ae1ff623f37bcb260804a1c7f6a4c3d723abf309962551684d4ceeb90a80",
+      "source_url": "https://github.com/ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000/blob/79bbc001db042fc85dc2b15e4175210eaec3e78e/patches/pr31835-notest.diff",
+      "ported_patch_ids": [],
+      "evidence": [
+        {
+          "path": "python/sglang/srt/managers/schedule_policy.py",
+          "anchor": "prefill_delayer_single_pass.negotiate_should_allow_prefill(",
+          "line": 1121,
+          "file_sha256": "28f57c7a6ef21f386d9083f24cbc4077280dd31e7abbc94667c904f9365aec68"
+        }
+      ],
+      "gpu_validation": "not_run"
+    },
+    {
+      "patch": "pr32880-notest.diff",
+      "status": "already_equivalent",
+      "reason": "all/mixed 分支均有 max_delay_passes 上限；永久高水位被 RecentPrefillBatchSizeTracker 的有限窗口替代，无需恢复旧指数衰减实现。",
+      "original_sha256": "415524080ef000fb89bc12f579210569e7f0e66f28f82ca8c73dd69c7e335708",
+      "source_url": "https://github.com/ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000/blob/79bbc001db042fc85dc2b15e4175210eaec3e78e/patches/pr32880-notest.diff",
+      "ported_patch_ids": [],
+      "evidence": [
+        {
+          "path": "python/sglang/srt/managers/prefill_delayer.py",
+          "anchor": "prev_delayed_count < self._max_delay_passes - 1",
+          "line": 290,
+          "file_sha256": "d7039b9b360bc6fa4631fee7fcc8053a95bc64d482fe280f22847e273fb41c2a"
+        },
+        {
+          "path": "python/sglang/srt/managers/prefill_delayer.py",
+          "anchor": "class RecentPrefillBatchSizeTracker",
+          "line": 26,
+          "file_sha256": "d7039b9b360bc6fa4631fee7fcc8053a95bc64d482fe280f22847e273fb41c2a"
+        }
+      ],
+      "gpu_validation": "not_run"
+    },
+    {
+      "patch": "pr27199-notest.diff",
+      "status": "ported",
+      "reason": "require_reasoning 已保留，但批请求切片仍丢 routing_key，补齐同一请求字段。",
+      "original_sha256": "298fea1a0d17b95f45400831ed40b6a328a2b8553c1af81330de782315dd5586",
+      "source_url": "https://github.com/ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000/blob/79bbc001db042fc85dc2b15e4175210eaec3e78e/patches/pr27199-notest.diff",
+      "ported_patch_ids": [
+        "compat-request-routing-key"
+      ],
+      "evidence": [
+        {
+          "path": "python/sglang/srt/managers/io_struct.py",
+          "anchor": "routing_key=self.routing_key,",
+          "line": 1038,
+          "file_sha256": "a0802b5cd5dbdcf7039cbb61fb516c6b185bc24cc2e7a72d29a1ec463edf77ed"
+        }
+      ],
+      "gpu_validation": "not_run"
+    },
+    {
+      "patch": "dsv4-compact-gamma-runtime.diff",
+      "status": "already_equivalent",
+      "reason": "置信度头已抽到公共 DSparkConfidenceHead，直接从 draft_tokens.shape 获取运行时 gamma。",
+      "original_sha256": "c34bb29be464942998ba550511e72a1213e83564959d1338a7d19efd8f074541",
+      "source_url": "https://github.com/ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000/blob/79bbc001db042fc85dc2b15e4175210eaec3e78e/patches/dsv4-compact-gamma-runtime.diff",
+      "ported_patch_ids": [],
+      "evidence": [
+        {
+          "path": "python/sglang/srt/models/dspark.py",
+          "anchor": "bs, gamma = draft_tokens.shape",
+          "line": 343,
+          "file_sha256": "d0561e9c1132a3844c0d2ea7e579d428755f67c8a5409e51745242c721a81157"
+        },
+        {
+          "path": "python/sglang/srt/models/dspark.py",
+          "anchor": "features.view(bs, gamma, -1)",
+          "line": 351,
+          "file_sha256": "d0561e9c1132a3844c0d2ea7e579d428755f67c8a5409e51745242c721a81157"
+        }
+      ],
+      "gpu_validation": "not_run"
+    },
+    {
+      "patch": "pr33805-notest.diff",
+      "status": "already_equivalent",
+      "reason": "SWA 回收与 decode_batch_idx 推进已位于 DFlashDraftInputV2.prepare_for_decode；重复放进 spec_utils 会双重推进。",
+      "original_sha256": "532fb7210dd733e9807d3d9dde5875ff89ec8c2ea3336b3a1bdf4b1f6e0a83ab",
+      "source_url": "https://github.com/ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000/blob/79bbc001db042fc85dc2b15e4175210eaec3e78e/patches/pr33805-notest.diff",
+      "ported_patch_ids": [],
+      "evidence": [
+        {
+          "path": "python/sglang/srt/speculative/dflash_info_v2.py",
+          "anchor": "batch.maybe_evict_swa()",
+          "line": 129,
+          "file_sha256": "c66fd2a9629c5f0f36ad4eca34f2910dc8e8af509fd8c6b2fa3fd2722f18004f"
+        },
+        {
+          "path": "python/sglang/srt/speculative/dflash_info_v2.py",
+          "anchor": "req.decode_batch_idx += 1",
+          "line": 215,
+          "file_sha256": "c66fd2a9629c5f0f36ad4eca34f2910dc8e8af509fd8c6b2fa3fd2722f18004f"
+        }
+      ],
+      "gpu_validation": "not_run"
+    },
+    {
+      "patch": "pr33795-notest.diff",
+      "status": "already_equivalent",
+      "reason": "CUDA graph 捕获前的设备同步及 TP barrier 已存在，避免异步 JIT 进入捕获区。",
+      "original_sha256": "a5a67a9b69f52ee37d5664a85ec80bde09dc0637517d83e9324fdc5675231a3d",
+      "source_url": "https://github.com/ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000/blob/79bbc001db042fc85dc2b15e4175210eaec3e78e/patches/pr33795-notest.diff",
+      "ported_patch_ids": [],
+      "evidence": [
+        {
+          "path": "python/sglang/srt/model_executor/runner_backend/full_cuda_graph_backend.py",
+          "anchor": "self._device_module.synchronize()",
+          "line": 163,
+          "file_sha256": "4cdf861b6dbf61d2875598602c77855df06910784fcec43c89fc132cc99bf217"
+        }
+      ],
+      "gpu_validation": "not_run"
+    },
+    {
+      "patch": "pr32379-notest.diff",
+      "status": "already_equivalent",
+      "reason": "SWA 预算已迁入 prefill_budget，按 min(extend+decode,window) 计算，避免重复预留缓存前缀。",
+      "original_sha256": "3d5a2cf788302a1aadf77980fe5b66d0d239bdd2c7661984cd508a6876b06673",
+      "source_url": "https://github.com/ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000/blob/79bbc001db042fc85dc2b15e4175210eaec3e78e/patches/pr32379-notest.diff",
+      "ported_patch_ids": [],
+      "evidence": [
+        {
+          "path": "python/sglang/srt/mem_cache/prefill_budget.py",
+          "anchor": "min(extend_input_len + max_new_tokens, sliding_window_size)",
+          "line": 54,
+          "file_sha256": "b1d64e648d958aeb82fe60c8acacbe9ecd4d0c83ca2ea8a058eaaaf0b488e07e"
+        }
+      ],
+      "gpu_validation": "not_run"
+    },
+    {
+      "patch": "pr32700-notest.diff",
+      "status": "already_equivalent",
+      "reason": "预算模块仅在 swa_never_fits 时采用 chunk-cap escape，区分整个池放不下和暂时压力。",
+      "original_sha256": "3f33b639cccfc79ef9d64c7d290da375ff0e9dd7953701684c96868486bb6f2d",
+      "source_url": "https://github.com/ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000/blob/79bbc001db042fc85dc2b15e4175210eaec3e78e/patches/pr32700-notest.diff",
+      "ported_patch_ids": [],
+      "evidence": [
+        {
+          "path": "python/sglang/srt/mem_cache/prefill_budget.py",
+          "anchor": "if self.swa_never_fits(",
+          "line": 260,
+          "file_sha256": "b1d64e648d958aeb82fe60c8acacbe9ecd4d0c83ca2ea8a058eaaaf0b488e07e"
+        }
+      ],
+      "gpu_validation": "not_run"
+    },
+    {
+      "patch": "pr31975-notest.diff",
+      "status": "already_equivalent",
+      "reason": "partial JSON 的 IndexError 与 extra-data 回退已包含。",
+      "original_sha256": "51006f911e3a434da6b2c2449e20e74f70d8393a4b598df0c7f2ac35d02a8a1e",
+      "source_url": "https://github.com/ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000/blob/79bbc001db042fc85dc2b15e4175210eaec3e78e/patches/pr31975-notest.diff",
+      "ported_patch_ids": [],
+      "evidence": [
+        {
+          "path": "python/sglang/srt/function_call/utils.py",
+          "anchor": "except (JSONDecodeError, IndexError) as e:",
+          "line": 208,
+          "file_sha256": "3c1caf6907f05ddd4a44634f2c907d514de2191a45ee76b2ffaf962bf30a0902"
+        }
+      ],
+      "gpu_validation": "not_run"
+    },
+    {
+      "patch": "pr33568-notest.diff",
+      "status": "already_equivalent",
+      "reason": "工具 schema 序列化已排除未设置字段并使用别名。",
+      "original_sha256": "2f32e24080319f4382e725a57a2ed1f193201d06112f59db7e82ba623904400c",
+      "source_url": "https://github.com/ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000/blob/79bbc001db042fc85dc2b15e4175210eaec3e78e/patches/pr33568-notest.diff",
+      "ported_patch_ids": [],
+      "evidence": [
+        {
+          "path": "python/sglang/srt/entrypoints/openai/serving_chat.py",
+          "anchor": "exclude_unset=True",
+          "line": 570,
+          "file_sha256": "ef5b090e0a5314948c91a0f11fadc915befb995bd124a807207f858a88633226"
+        }
+      ],
+      "gpu_validation": "not_run"
+    },
+    {
+      "patch": "pr32686-notest.diff",
+      "status": "ported",
+      "reason": "新版预热仍只缩到 2048，最低形状仍超预算时会继续分配。改为在支持列表内选最大可容纳形状，全部不满足则跳过。",
+      "original_sha256": "d1c58d130600b75f4c7c14536e8986e6374d1298cb8b13ebfbd78e86a559ba5b",
+      "source_url": "https://github.com/ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000/blob/79bbc001db042fc85dc2b15e4175210eaec3e78e/patches/pr32686-notest.diff",
+      "ported_patch_ids": [
+        "compat-deepgemm-warmup-budget"
+      ],
+      "evidence": [
+        {
+          "path": "python/sglang/srt/layers/deep_gemm_wrapper/compile_utils.py",
+          "anchor": "def _select_max_m_within_budget",
+          "line": 195,
+          "file_sha256": "85213ce6794757400e07596357bb46215d826125eb8e35ed54353fb4005a625f"
+        }
+      ],
+      "gpu_validation": "not_run"
+    },
+    {
+      "patch": "pr30096-family-notest.diff",
+      "status": "already_equivalent",
+      "reason": "新版已包含 GrammarMask/GrammarTree 及 DSPARK grammar 路径，带 grammar 的请求退出折叠 accept。惩罚与 grammar 组合缺陷由本项目 verify 补丁另行修正。",
+      "original_sha256": "4850b1307e3c6ac2c314a0efb555a0c352d40fc9081b0a5b7b0b126b15a9de51",
+      "source_url": "https://github.com/ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000/blob/79bbc001db042fc85dc2b15e4175210eaec3e78e/patches/pr30096-family-notest.diff",
+      "ported_patch_ids": [],
+      "evidence": [
+        {
+          "path": "python/sglang/srt/constrained/base_grammar_backend.py",
+          "anchor": "class GrammarMask",
+          "line": 148,
+          "file_sha256": "d86ad3be01c77c3e18f223978519e6e1a2bd2e1a181dbe9c3797678df96c0dbe"
+        },
+        {
+          "path": "python/sglang/srt/speculative/dspark_components/dspark_worker_v2.py",
+          "anchor": "GrammarTree.from_linear_chain(verify_ids_2d)",
+          "line": 1008,
+          "file_sha256": "2badb7f09ab7179ae048f225855ebcc02fc1eba478fc2f88b6bfdc405d7a45f2"
+        },
+        {
+          "path": "python/sglang/srt/speculative/dspark_components/dspark_worker_v2.py",
+          "anchor": "not batch.has_grammar",
+          "line": 957,
+          "file_sha256": "2badb7f09ab7179ae048f225855ebcc02fc1eba478fc2f88b6bfdc405d7a45f2"
+        }
+      ],
+      "gpu_validation": "not_run"
+    },
+    {
+      "patch": "pr33459-notest.diff",
+      "status": "already_equivalent",
+      "reason": "DFLASH 已调用新版 compute_spec_logprobs，不再需要旧 compute_spec_v2_logprobs 补丁。",
+      "original_sha256": "bc3a5dace6119b1c7debd36c436c3f3e8a51c5b98615032cf5024fb8e8600908",
+      "source_url": "https://github.com/ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000/blob/79bbc001db042fc85dc2b15e4175210eaec3e78e/patches/pr33459-notest.diff",
+      "ported_patch_ids": [],
+      "evidence": [
+        {
+          "path": "python/sglang/srt/speculative/dflash_worker_v2.py",
+          "anchor": "compute_spec_logprobs(",
+          "line": 2931,
+          "file_sha256": "def405ee83702b1a1c97288432b9d936338b509a8faa30a26e19428baa5bb5fb"
+        }
+      ],
+      "gpu_validation": "not_run"
+    },
+    {
+      "patch": "dspark-return-logprob.diff",
+      "status": "already_equivalent",
+      "reason": "DSPARK 已在接受之后调用 compute_spec_logprobs，使用当前 chain_stride 布局。",
+      "original_sha256": "9f630136e861237f4fdb101df1dd66e83911aa8db0e59748eef302f1143b896d",
+      "source_url": "https://github.com/ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000/blob/79bbc001db042fc85dc2b15e4175210eaec3e78e/patches/dspark-return-logprob.diff",
+      "ported_patch_ids": [],
+      "evidence": [
+        {
+          "path": "python/sglang/srt/speculative/dspark_components/dspark_worker_v2.py",
+          "anchor": "compute_spec_logprobs(",
+          "line": 1124,
+          "file_sha256": "2badb7f09ab7179ae048f225855ebcc02fc1eba478fc2f88b6bfdc405d7a45f2"
+        }
+      ],
+      "gpu_validation": "not_run"
+    },
+    {
+      "patch": "dsv4-spec-scaling-penalties.diff",
+      "status": "ported",
+      "reason": "恢复乘性惩罚及 no-op 判断，但不照搬旧 dense fallback：其 scaling-before-additive 分解在跨零时不成立。当前实现先加惩罚、再按实际 logits 符号缩放，最后 mask/bias。",
+      "original_sha256": "044047372f8266b17cfee523ccc36f7f7c09c58428f23e98595a506ef0f7cc6a",
+      "source_url": "https://github.com/ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000/blob/79bbc001db042fc85dc2b15e4175210eaec3e78e/patches/dsv4-spec-scaling-penalties.diff",
+      "ported_patch_ids": [
+        "compat-verify-penalties"
+      ],
+      "evidence": [
+        {
+          "path": "python/sglang/srt/speculative/dflash_utils.py",
+          "anchor": "Scaling is sign-dependent",
+          "line": 285,
+          "file_sha256": "a381f887e6f38043d8630c0df02e6021c9d50e75443c71e8851df10897e4fa48"
+        },
+        {
+          "path": "python/sglang/srt/speculative/dspark_components/dspark_verify.py",
+          "anchor": "acc_scaling_penalties",
+          "line": 67,
+          "file_sha256": "a1da14f6f21fc47902085a34ea1c86523fd047ce8bdd481c32b239671ec89291"
+        }
+      ],
+      "gpu_validation": "not_run"
+    },
+    {
+      "patch": "dsv4-prefix-affinity-skew-by-requests.diff",
+      "status": "not_applicable",
+      "reason": "依赖旧 prefix_affinity 特性；当前控制器无该方法且部署为 DP1。保留当前 TOTAL_REQUESTS 策略，不为迁移修复新增调度特性。",
+      "original_sha256": "947c76d4b18319e2805a4ebb1da4987bdf96b553ceb460dcd8f40ded27b9f896",
+      "source_url": "https://github.com/ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000/blob/79bbc001db042fc85dc2b15e4175210eaec3e78e/patches/dsv4-prefix-affinity-skew-by-requests.diff",
+      "ported_patch_ids": [],
+      "evidence": [
+        {
+          "path": "python/sglang/srt/managers/data_parallel_controller.py",
+          "anchor": "def total_requests_scheduler",
+          "line": 886,
+          "file_sha256": "734640547521a65f63bf6f8166b430ca3896fed77e9ba84307977390d76db0d6"
+        }
+      ],
+      "gpu_validation": "not_run"
+    }
+  ]
+}

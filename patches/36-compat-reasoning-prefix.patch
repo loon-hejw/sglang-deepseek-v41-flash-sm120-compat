@@ -1,0 +1,19 @@
+diff --git a/python/sglang/srt/parser/reasoning_parser.py b/python/sglang/srt/parser/reasoning_parser.py
+index a5f9dde..5b85b30 100644
+--- a/python/sglang/srt/parser/reasoning_parser.py
++++ b/python/sglang/srt/parser/reasoning_parser.py
+@@ -291,8 +291,12 @@ class BaseReasoningFormatDetector:
+ 
+         # If we're not in a reasoning block return as normal text
+         if not self._in_reasoning:
+-            self._buffer = ""
+-            return StreamingParseResult(normal_text=current_text)
++            holdback = max(
++                self._ends_with_partial_token(current_text, token)
++                for token in tokens_to_check
++            )
++            self._buffer = current_text[len(current_text) - holdback :]
++            return StreamingParseResult(normal_text=current_text[: len(current_text) - holdback])
+ 
+         return StreamingParseResult()
+ 

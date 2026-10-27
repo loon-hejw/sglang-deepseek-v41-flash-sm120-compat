@@ -1,0 +1,129 @@
+diff --git a/python/sglang/srt/speculative/dflash_utils.py b/python/sglang/srt/speculative/dflash_utils.py
+index 63ea76f..eb6bff8 100644
+--- a/python/sglang/srt/speculative/dflash_utils.py
++++ b/python/sglang/srt/speculative/dflash_utils.py
+@@ -19,6 +19,7 @@ from sglang.srt.layers.sampler import (
+     apply_custom_logit_processor,
+     top_p_normalize_probs_torch,
+ )
++from sglang.srt.sampling.penaltylib.repetition_penalty import apply_scaling_penalties
+ from sglang.srt.managers.schedule_batch import Req
+ from sglang.srt.model_executor.runner_utils.pool import borrow_graph_pool
+ from sglang.srt.runtime_context import get_spec
+@@ -247,7 +248,7 @@ def apply_dflash_verify_logits_adjustments(
+     """Apply sampling-time logit adjustments for DFlash verify in place.
+ 
+     This keeps v1 and v2 verify semantics aligned while letting overlap scheduling
+-    use the cheaper precomputed `acc_linear_penalties` path instead of allocating a
++    use the cheaper precomputed `acc_additive_penalties` path instead of allocating a
+     repeated `[bs * draft_token_num, vocab]` penalty tensor every step.
+     """
+     if sampling_info is None:
+@@ -273,57 +274,32 @@ def apply_dflash_verify_logits_adjustments(
+             num_tokens_in_batch=draft_token_num,
+         )
+ 
+-    acc_linear_penalties = getattr(sampling_info, "acc_linear_penalties", None)
++    additive = getattr(sampling_info, "acc_additive_penalties", None)
++    scaling = getattr(sampling_info, "acc_scaling_penalties", None)
+     penalizer = getattr(sampling_info, "penalizer_orchestrator", None)
+     grammar_mask = getattr(sampling_info, "grammar_mask", None)
+     logit_bias = getattr(sampling_info, "logit_bias", None)
+-
+-    logits_3d: Optional[torch.Tensor] = None
+-
+-    def get_logits_3d() -> torch.Tensor:
+-        nonlocal logits_3d
+-        if logits_3d is None:
+-            logits_3d = next_token_logits.reshape(bs, draft_token_num, -1)
+-        return logits_3d
+-
+-    # Dense fallback only when we need live penalizer application or a vocab mask.
+-    # In overlap scheduling the common path is `acc_linear_penalties`, which can be
+-    # broadcast over the verify block without materializing a repeated buffer.
+-    if (
+-        penalizer is not None and penalizer.is_required and acc_linear_penalties is None
+-    ) or grammar_mask is not None:
+-        linear_penalty = torch.zeros(
+-            (bs, next_token_logits.shape[1]),
+-            dtype=torch.float32,
+-            device=next_token_logits.device,
++    logits = next_token_logits.view(bs, draft_token_num, -1)
++
++    # Match ordinary overlap sampling: additive, scaling, grammar, then bias.
++    # Scaling is sign-dependent, so it cannot be folded into a zeros buffer or
++    # distributed across logits and additive terms separately.
++    if additive is not None:
++        logits.add_(additive.to(device=logits.device)[:, None, :])
++    if scaling is not None:
++        apply_scaling_penalties(logits, scaling.to(device=logits.device)[:, None, :])
++    if penalizer is not None and penalizer.is_required:
++        # The non-overlap path has live state rather than precomputed tensors.
++        penalizer.apply(next_token_logits, repeat=draft_token_num)
++    if grammar_mask is not None:
++        # Apply the backend's actual mask to real logits, including +inf rows.
++        # Adding a mask computed on zeros would turn masked +inf into NaN.
++        grammar_mask.grammar.apply_vocab_mask(
++            logits=next_token_logits,
++            vocab_mask=grammar_mask.vocab_mask.repeat_interleave(draft_token_num, dim=0),
+         )
+-        sampling_info.apply_logits_bias(linear_penalty)
+-        get_logits_3d().add_(
+-            linear_penalty[:, None, :].to(dtype=next_token_logits.dtype)
+-        )
+-        return
+-
+-    if acc_linear_penalties is not None:
+-        if (
+-            acc_linear_penalties.device != next_token_logits.device
+-            or acc_linear_penalties.dtype != next_token_logits.dtype
+-        ):
+-            acc_linear_penalties = acc_linear_penalties.to(
+-                device=next_token_logits.device,
+-                dtype=next_token_logits.dtype,
+-            )
+-        get_logits_3d().add_(acc_linear_penalties[:, None, :])
+-
+     if logit_bias is not None:
+-        if (
+-            logit_bias.device != next_token_logits.device
+-            or logit_bias.dtype != next_token_logits.dtype
+-        ):
+-            logit_bias = logit_bias.to(
+-                device=next_token_logits.device,
+-                dtype=next_token_logits.dtype,
+-            )
+-        get_logits_3d().add_(logit_bias[:, None, :])
++        logits.add_(logit_bias.to(device=logits.device)[:, None, :])
+ 
+ 
+ def _get_or_create_chain_verify_buffers(
+diff --git a/python/sglang/srt/speculative/dflash_worker_v2.py b/python/sglang/srt/speculative/dflash_worker_v2.py
+index 547c7fd..10bf35b 100644
+--- a/python/sglang/srt/speculative/dflash_worker_v2.py
++++ b/python/sglang/srt/speculative/dflash_worker_v2.py
+@@ -623,7 +623,8 @@ class DFlashWorkerV2(BaseSpecWorker):
+         return (
+             sampling_info.is_all_greedy
+             and not sampling_info.has_custom_logit_processor
+-            and getattr(sampling_info, "acc_linear_penalties", None) is None
++            and getattr(sampling_info, "acc_additive_penalties", None) is None
++            and getattr(sampling_info, "acc_scaling_penalties", None) is None
+             and (penalizer is None or not penalizer.is_required)
+             and getattr(sampling_info, "grammar_mask", None) is None
+             and getattr(sampling_info, "logit_bias", None) is None
+diff --git a/python/sglang/srt/speculative/dspark_components/dspark_verify.py b/python/sglang/srt/speculative/dspark_components/dspark_verify.py
+index 043ef93..0b19c69 100644
+--- a/python/sglang/srt/speculative/dspark_components/dspark_verify.py
++++ b/python/sglang/srt/speculative/dspark_components/dspark_verify.py
+@@ -62,7 +62,9 @@ def verify_logits_adjustments_are_noop(sampling_info) -> bool:
+         return True
+     if sampling_info.has_custom_logit_processor:
+         return False
+-    if getattr(sampling_info, "acc_linear_penalties", None) is not None:
++    if getattr(sampling_info, "acc_additive_penalties", None) is not None:
++        return False
++    if getattr(sampling_info, "acc_scaling_penalties", None) is not None:
+         return False
+     penalizer = getattr(sampling_info, "penalizer_orchestrator", None)
+     if penalizer is not None and penalizer.is_required:

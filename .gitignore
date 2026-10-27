@@ -1,2 +1,6 @@
 __pycache__/
 stack.json
+.cache/
+.venv/
+artifacts/
+*.bundle

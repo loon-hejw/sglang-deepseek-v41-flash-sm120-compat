@@ -1,0 +1,7 @@
+# Portable local CPU harness; the image's tests use its locked production PyTorch.
+torch==2.10.0
+pytest==8.4.2
+pydantic==2.14.1
+orjson==3.13.0
+partial-json-parser==0.2.1.1.post7
+numpy==2.4.0

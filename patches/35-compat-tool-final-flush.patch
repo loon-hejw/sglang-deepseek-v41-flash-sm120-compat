@@ -1,0 +1,74 @@
+diff --git a/python/sglang/srt/entrypoints/openai/serving_chat.py b/python/sglang/srt/entrypoints/openai/serving_chat.py
+index d947931..ab0a89a 100644
+--- a/python/sglang/srt/entrypoints/openai/serving_chat.py
++++ b/python/sglang/srt/entrypoints/openai/serving_chat.py
+@@ -3252,27 +3252,23 @@ class OpenAIServingChat(OpenAIServingBase):
+         ):
+             return None
+ 
+-        # Get the last tool call that was being processed
+-        tool_index = len(detector.prev_tool_call_arr) - 1
+-        if tool_index < 0 or tool_index >= len(detector.streamed_args_for_tool):
+-            return None
+-
+-        # Get expected vs actual arguments
+-        expected_args = detector.prev_tool_call_arr[tool_index].get("arguments", {})
+-        if isinstance(expected_args, str):
+-            expected_call = expected_args
+-        else:
+-            expected_call = json.dumps(expected_args, ensure_ascii=False)
+-        actual_call = detector.streamed_args_for_tool[tool_index]
+-
+-        # Check if there are remaining arguments to send
+-        remaining_call = (
+-            expected_call[len(actual_call) :]
+-            if expected_call.startswith(actual_call)
+-            else ""
+-        )
+-
+-        if remaining_call:
++        sse_chunks = []
++        for tool_index, call in enumerate(detector.prev_tool_call_arr):
++            if tool_index >= len(detector.streamed_args_for_tool):
++                break
++            expected_args = call.get("arguments")
++            if expected_args is None:
++                continue
++            expected_call = (
++                expected_args if isinstance(expected_args, str)
++                else json.dumps(expected_args, ensure_ascii=False)
++            )
++            actual_call = detector.streamed_args_for_tool[tool_index]
++            if not expected_call.startswith(actual_call):
++                continue
++            remaining_call = expected_call[len(actual_call):]
++            if not remaining_call:
++                continue
+             # Create tool call chunk with remaining arguments
+             tool_call = ToolCall(
+                 id=None,  # No ID for argument deltas
+@@ -3296,6 +3292,6 @@ class OpenAIServingChat(OpenAIServingBase):
+                 model=request.model,
+             )
+ 
+-            return f"data: {chunk.model_dump_json()}\n\n"
+-
+-        return None
++            sse_chunks.append(f"data: {chunk.model_dump_json()}\n\n")
++            detector.streamed_args_for_tool[tool_index] = expected_call
++        return "".join(sse_chunks) or None
+diff --git a/python/sglang/srt/function_call/base_format_detector.py b/python/sglang/srt/function_call/base_format_detector.py
+index 6905f42..f238620 100644
+--- a/python/sglang/srt/function_call/base_format_detector.py
++++ b/python/sglang/srt/function_call/base_format_detector.py
+@@ -267,6 +267,10 @@ class BaseFormatDetector(ABC):
+                         ],
+                     )
+                     self.current_tool_name_sent = True
++                    if is_current_complete and "arguments" in current_tool_call:
++                        while len(self.prev_tool_call_arr) <= self.current_tool_id:
++                            self.prev_tool_call_arr.append({})
++                        self.prev_tool_call_arr[self.current_tool_id] = current_tool_call
+                 else:
+                     res = StreamingParseResult()
+ 

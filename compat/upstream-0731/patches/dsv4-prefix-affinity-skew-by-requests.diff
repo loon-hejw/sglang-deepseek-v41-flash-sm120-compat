@@ -1,0 +1,31 @@
+diff --git a/python/sglang/srt/managers/data_parallel_controller.py b/python/sglang/srt/managers/data_parallel_controller.py
+index c43a4fc1bf..1a90dd571e 100644
+--- a/python/sglang/srt/managers/data_parallel_controller.py
++++ b/python/sglang/srt/managers/data_parallel_controller.py
+@@ -941,9 +941,23 @@ class DataParallelController:
+         self.dp_budget.total_tokens[rank] += self._estimated_tokens(req)
+
+     def _rank_load(self, rank: int) -> float:
+-        if self._affinity_fallback == LoadBalanceMethod.TOTAL_REQUESTS:
+-            return float(self.dp_budget.total_requests[rank])
+-        return float(self.dp_budget.total_tokens[rank])
++        """Overload signal for the affinity skew guard: live running+waiting
++        request count, not resident KV-cache tokens.
++
++        A rank holding one huge, steadily-decoding long-context session reads
++        as many times the fleet-average token footprint despite having full
++        compute/memory headroom to serve more -- exactly the affinity-pinned
++        session the guard exists to protect, punished for being expensive to
++        reprefill. Every surveyed system that combines cache-affinity routing
++        with overload protection (sglang's own sgl-router cache-aware policy,
++        AIBrix, llm-d, Ray Serve's PrefixCacheAffinityRouter, Mooncake) keys
++        the skew/imbalance check off request or queue count and treats memory
++        occupancy as a separate admission ceiling for new, uncached requests
++        -- never as a reason to reroute an existing pinned continuation.
++        Decoupled from `_affinity_fallback` (that flag controls what to do
++        when affinity gives up, not what "overloaded" means).
++        """
++        return float(self.dp_budget.total_requests[rank])
+
+     def event_loop(self):
+         while True:

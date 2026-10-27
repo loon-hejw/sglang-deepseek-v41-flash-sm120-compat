@@ -25,3 +25,7 @@ Performance claims need measured evidence for the stated artifact, hardware, con
 ## Contributions
 
 Preserve contributor credit and upstream pull-request references in the patch tables. Do not hard-wrap public prose or use em dashes.
+
+## Local compatibility fork
+
+Keep all 33 original patch decisions accounted for in compat/migration.json. Preserve the V4.1 source and dependency pins unless explicitly changing the baseline. Record CPU source-body checks separately from native CUDA, image-build and model-inference validation. Do not publish inherited performance results as measurements of the local candidate. Run scripts/test-compat.sh and scripts/check-migration.py with the prepared SGLang source in addition to the upstream checks.

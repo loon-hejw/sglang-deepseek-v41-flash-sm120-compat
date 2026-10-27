@@ -1,0 +1,126 @@
+{
+  "schema": 1,
+  "recorded_at_utc": "2026-10-27T10:31:59.319049+00:00",
+  "candidate": "v0.4.4-rc.1",
+  "baseline_project_commit": "11c525d0234dc25e167e4d6bb0fe9fe757762f5f",
+  "platform": {
+    "system": "Darwin",
+    "machine": "arm64",
+    "python": "3.12.16",
+    "torch": "2.10.0",
+    "device": "cpu"
+  },
+  "checks": {
+    "cpu_regressions": {
+      "status": "passed",
+      "tests": 132,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 132,
+      "junit": "artifacts/compat-cpu-tests.xml",
+      "method": "Actual locked function/class bodies loaded via AST with import isolation and torch.compile decorators removed; tensor emulation of the Triton combine body. Not native CUDA or an installed production image test."
+    },
+    "baseline_control": {
+      "status": "expected_failures_observed",
+      "tests": 132,
+      "failures": 55,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 77,
+      "junit": "artifacts/baseline-cpu-tests.xml",
+      "effective_tree": "fe51b5fbe9394b3f1c22fd1154e0284cb455973b",
+      "note": "The same 132-case harness runs against the original 32-patch baseline. Failures include parameter variants and new helper methods absent from the baseline; 55 failures do not mean 55 distinct defects."
+    },
+    "migration_accounting": {
+      "status": "passed",
+      "old_patches": 33,
+      "ported": 7,
+      "already_equivalent": 22,
+      "not_applicable": 4
+    },
+    "release_contract": {
+      "status": "passed",
+      "command": "bash scripts/validate-release.sh"
+    },
+    "documentation_contract": {
+      "status": "passed",
+      "command": "bash scripts/validate-docs.sh"
+    },
+    "official_source_trees": {
+      "status": "passed",
+      "method": "Official GitHub codeload archives, canonical Git trees, locked patch SHA256, git apply --index, resulting Git trees. Submodule gitlinks verified; submodule worktrees not materialized.",
+      "trees": {
+        "deepgemm": {
+          "commit": "d6fcb32f193da33537819898fae4738f8aa3160e",
+          "tree": "8c7e35622d437712b732c301f576730a48f50133",
+          "effective_tree": "8c7e35622d437712b732c301f576730a48f50133"
+        },
+        "flashinfer": {
+          "commit": "f64b4ba8762ded12a4f4b9a2092974c9a395e7ca",
+          "tree": "551364db76ce9cbb5a1da8e2655d26879b366fde",
+          "effective_tree": "7869ad78e30064fddf7e389448fdbe1e21bc4edb"
+        },
+        "sglang": {
+          "commit": "62cee1b15c22350b17a9256fc6ad5777feb2ec70",
+          "tree": "8216c915fb861ca391b395c86e5ced1ce85c91cf",
+          "effective_tree": "0efe6756c7652d1dda1e28c9fcacb0758fa70c0c"
+        },
+        "triton": {
+          "commit": "c01b6774b1865984607d89d89d3a10833de92037",
+          "tree": "dab7b4ace9c36d16202563817a204e8c4b08ea62",
+          "effective_tree": "6840ddb42014c626cfd511d78345820452e54603"
+        }
+      },
+      "log": "artifacts/verify-patches.log"
+    },
+    "verify_patches_full_command": {
+      "status": "incomplete_network",
+      "source_trees": "passed",
+      "base_image_manifest": "not_verified",
+      "command": "COMPAT_SOURCE_FETCH=archive bash scripts/verify-patches.sh",
+      "reason": "Docker Hub auth.docker.io:443 connection timed out; source checks completed before the registry request."
+    },
+    "build_entrypoint": {
+      "status": "dry_run_passed",
+      "image": "local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.1"
+    },
+    "gpu_probe_entrypoint": {
+      "status": "dry_run_and_offline_SSE_checks_passed",
+      "valid_synthetic_streams": 6,
+      "rejected_truncated_streams": 1,
+      "endpoint_requests_sent": 0,
+      "default_requests_per_endpoint": 378
+    },
+    "syntax_and_whitespace": {
+      "status": "passed",
+      "checks": [
+        "Python 3.12 py_compile for new Python entrypoints",
+        "bash -n for shell entrypoints",
+        "git diff --check"
+      ]
+    },
+    "full_image_build": {
+      "status": "not_run"
+    },
+    "installed_image_cpu_suite": {
+      "status": "not_run"
+    },
+    "native_cuda_triton_cuda_graph": {
+      "status": "not_run"
+    },
+    "model_inference_quality_and_performance": {
+      "status": "not_run"
+    },
+    "deployment": {
+      "status": "unchanged"
+    }
+  },
+  "remaining_validation": [
+    "Verify the pinned base manifest when Docker Hub is reachable.",
+    "Build the image on Linux amd64 and run its installed-source and dependency gates.",
+    "Run native CUDA/Triton/Graph tests and controlled API comparisons on isolated SM120 GPUs.",
+    "Verify overlap history visibility and within-verify-block penalty behavior against a DSPARK-disabled control; CPU committed-history checks alone do not establish end-to-end sampling equivalence.",
+    "Exercise long context, padded batches, cache reuse, cancellation, SWA eviction and real workload format cases."
+  ]
+}

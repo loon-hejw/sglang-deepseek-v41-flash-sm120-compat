@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "lineage": "dsv41-platform",
-  "candidate_tag": "v0.4.3-rc.1",
+  "candidate_tag": "v0.4.4-rc.1",
   "platform": "linux/amd64",
   "base": {
     "tag": "docker.io/lmsysorg/sglang:nightly-dev-cu13-20261019-3c560089",
@@ -27,7 +27,7 @@
       "ref": "refs/heads/main",
       "commit": "62cee1b15c22350b17a9256fc6ad5777feb2ec70",
       "tree": "8216c915fb861ca391b395c86e5ced1ce85c91cf",
-      "effective_tree": "fe51b5fbe9394b3f1c22fd1154e0284cb455973b"
+      "effective_tree": "0efe6756c7652d1dda1e28c9fcacb0758fa70c0c"
     },
     "triton": {
       "repository": "https://github.com/triton-lang/triton.git",
@@ -556,6 +556,157 @@
       ],
       "path": "patches/32-dsv41-effort-minimal-medium.patch",
       "sha256": "53b3cb68043b38eb61b7dd215d7490ac814d7feb262626e92967ee3baa5048f7"
+    },
+    {
+      "id": "compat-verify-penalties",
+      "kind": "branch",
+      "branch": "rebased/0731-compat-verify-penalties",
+      "upstream_pr": "pending",
+      "reason": "Local compatibility port; original authors and references are recorded in compat/migration.json.",
+      "head": "e1842a153d1545b98d93941eac49dd967ec3ea1d",
+      "base": "0f0d2ca6eea420778a3cb03651b369b60e1c7386",
+      "applied": "clean",
+      "purpose": "Restore additive and repetition penalties across DFLASH/DSPARK verify and skip gates",
+      "path": "patches/33-compat-verify-penalties.patch",
+      "sha256": "e550c1c7035fbf0861deb9ced95b3d119e3026569d219a3eb5c409ac3c4c2af3",
+      "cpu_tests": [
+        "test/registered/unit/compat_0731/test_compat.py"
+      ],
+      "origins": [
+        "pr33531-notest.diff",
+        "dsv4-spec-scaling-penalties.diff"
+      ]
+    },
+    {
+      "id": "compat-committed-penalty-state",
+      "kind": "branch",
+      "branch": "rebased/0731-compat-committed-penalty-state",
+      "upstream_pr": "pending",
+      "reason": "Local compatibility port; original authors and references are recorded in compat/migration.json.",
+      "head": "7ced122daf48c0259605e0f91ab8720fab2d5080",
+      "base": "e1842a153d1545b98d93941eac49dd967ec3ea1d",
+      "applied": "clean",
+      "purpose": "Track all committed speculative output tokens exactly once across batch reuse/filter/merge",
+      "path": "patches/34-compat-committed-penalty-state.patch",
+      "sha256": "3030ca50f9678040dd708d8d93fbf9a066fa2e4197fb16281c3e1520973b2596",
+      "cpu_tests": [
+        "test/registered/unit/compat_0731/test_compat.py"
+      ],
+      "origins": [
+        "pr33531-notest.diff"
+      ]
+    },
+    {
+      "id": "compat-tool-final-flush",
+      "kind": "branch",
+      "branch": "rebased/0731-compat-tool-final-flush",
+      "upstream_pr": "pending",
+      "reason": "Local compatibility port; original authors and references are recorded in compat/migration.json.",
+      "head": "fca7604432b148fe90cc2d17f5434a9eaf9220d7",
+      "base": "7ced122daf48c0259605e0f91ab8720fab2d5080",
+      "applied": "clean",
+      "purpose": "Flush all completed tool arguments once, including complete final name chunks",
+      "path": "patches/35-compat-tool-final-flush.patch",
+      "sha256": "263d05581040dc853cdcbfbffda521c4ea96e4cbb556decc3350cb5507013c62",
+      "cpu_tests": [
+        "test/registered/unit/compat_0731/test_compat.py"
+      ],
+      "origins": [
+        "pr32167-notest.diff"
+      ]
+    },
+    {
+      "id": "compat-reasoning-prefix",
+      "kind": "branch",
+      "branch": "rebased/0731-compat-reasoning-prefix",
+      "upstream_pr": "pending",
+      "reason": "Local compatibility port; original authors and references are recorded in compat/migration.json.",
+      "head": "fd8ea4b1d531eaa170e6b6c8f5b6c42f793d9569",
+      "base": "fca7604432b148fe90cc2d17f5434a9eaf9220d7",
+      "applied": "clean",
+      "purpose": "Hold trailing partial reasoning and tool markers in normal text",
+      "path": "patches/36-compat-reasoning-prefix.patch",
+      "sha256": "015c425cffa83c17778215145eda0908273b7a52908a05b04e2a9d47f6177aa4",
+      "cpu_tests": [
+        "test/registered/unit/compat_0731/test_compat.py"
+      ],
+      "origins": [
+        "pr31009-notest.diff"
+      ]
+    },
+    {
+      "id": "compat-request-routing-key",
+      "kind": "branch",
+      "branch": "rebased/0731-compat-request-routing-key",
+      "upstream_pr": "pending",
+      "reason": "Local compatibility port; original authors and references are recorded in compat/migration.json.",
+      "head": "75d5ad8bc10b06a8f2d824a3afeb698b9165e34b",
+      "base": "fd8ea4b1d531eaa170e6b6c8f5b6c42f793d9569",
+      "applied": "clean",
+      "purpose": "Preserve request routing keys when slicing batched generation requests",
+      "path": "patches/37-compat-request-routing-key.patch",
+      "sha256": "f937821b2d9d4a0dcf8f0328a8bfc46a73b15728ef54bf96630b3ffab7d57f7c",
+      "cpu_tests": [
+        "test/registered/unit/compat_0731/test_compat.py"
+      ],
+      "origins": [
+        "pr27199-notest.diff"
+      ]
+    },
+    {
+      "id": "compat-deepgemm-warmup-budget",
+      "kind": "branch",
+      "branch": "rebased/0731-compat-deepgemm-warmup-budget",
+      "upstream_pr": "pending",
+      "reason": "Local compatibility port; original authors and references are recorded in compat/migration.json.",
+      "head": "65824a7962ab5aad48a1a1fae3fd8d2b558fa861",
+      "base": "75d5ad8bc10b06a8f2d824a3afeb698b9165e34b",
+      "applied": "clean",
+      "purpose": "Skip DeepGEMM warmup when no supported shape fits available memory",
+      "path": "patches/38-compat-deepgemm-warmup-budget.patch",
+      "sha256": "384cbb2b04b8e147eb606a8d7ee4a9e0b4f59f7b8d9ad05cb279226eb5123104",
+      "cpu_tests": [
+        "test/registered/unit/compat_0731/test_compat.py"
+      ],
+      "origins": [
+        "pr32686-notest.diff"
+      ]
+    },
+    {
+      "id": "compat-draft-sentinel",
+      "kind": "branch",
+      "branch": "rebased/0731-compat-draft-sentinel",
+      "upstream_pr": "pending",
+      "reason": "Local compatibility port; original authors and references are recorded in compat/migration.json.",
+      "head": "ce503e544871d4d4edfee2d5047f6d64d2acdd5e",
+      "base": "65824a7962ab5aad48a1a1fae3fd8d2b558fa861",
+      "applied": "clean",
+      "purpose": "Keep degenerate Markov greedy draft rows within vocabulary bounds",
+      "path": "patches/39-compat-draft-sentinel.patch",
+      "sha256": "6bebf56ac0d1a0eff3e90914463ccb02d7e3483f026977a77eeabf36c805d7ab",
+      "cpu_tests": [
+        "test/registered/unit/compat_0731/test_compat.py"
+      ],
+      "origins": [
+        "pr32277-notest.diff"
+      ]
+    },
+    {
+      "id": "compat-cpu-regressions",
+      "kind": "branch",
+      "branch": "rebased/0731-cpu-regressions",
+      "upstream_pr": "pending",
+      "reason": "Local regression coverage for the compatibility series.",
+      "base": "ce503e544871d4d4edfee2d5047f6d64d2acdd5e",
+      "head": "ce12e18703ff8bf86eb3438b8335de20f81e02fd",
+      "applied": "clean",
+      "path": "patches/40-compat-cpu-regressions.patch",
+      "sha256": "ed518a6fb53820d133db4f4d20427dcb1c805e8f977b935aac4ed18272985184",
+      "purpose": "CPU regression coverage for migrated behavior and retained V4.1 DSML parsing",
+      "cpu_tests": [
+        "test/registered/unit/compat_0731/test_compat.py"
+      ],
+      "origins": []
     }
   ],
   "packaging": {

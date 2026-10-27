@@ -1,5 +1,8 @@
 # SGLang for DeepSeek-V4.1-Flash on SM120
 
+**Local compatibility fork.** Start with [中文使用说明](README.zh-CN.md). The local candidate is `local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.1`; it has not been built, published or GPU-validated. Use `examples/serve-compat-tp4.sh` for the fork. Published images and measurements below describe the upstream baseline only. See [migration accounting](compat/migration.json) and [validation status](compat/validation.json).
+
+
 An SGLang image, built from pinned sources, for [`deepseek-ai/DeepSeek-V4.1-Flash-1017`](https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash-1017) on four RTX PRO 6000 Blackwell (SM120) GPUs over PCIe: tensor parallelism 4 with expert parallelism 2, FP8 KV cache, DSpark speculative decoding, a 1,048,576-token context, image input and a host-RAM prefix cache.
 
 The current published stable image is `v0.4.3`.
@@ -86,6 +89,15 @@ SGLang series, applied in order to the pinned SGLang commit:
 | 30 | `30-openai-abort-finish-reason.patch` | [sgl-project/sglang#45132](https://github.com/sgl-project/sglang/pull/45132) | Aborted requests are reported as an error or a stop, never `finish_reason: "abort"` |
 | 31 | `31-openai-stream-exception-frame.patch` | [sgl-project/sglang#45133](https://github.com/sgl-project/sglang/pull/45133) | Failed chat and completion streams end with an error frame and `[DONE]` |
 | 32 | `32-dsv41-effort-minimal-medium.patch` | [sgl-project/sglang#45134](https://github.com/sgl-project/sglang/pull/45134) | DeepSeek-V4.1 supports `reasoning_effort` `minimal` and `medium` |
+
+| 33 | `33-compat-verify-penalties.patch` | Local compatibility port; see [migration audit](compat/migration.json) | Restore additive and repetition penalties across DFLASH/DSPARK verify and skip gates |
+| 34 | `34-compat-committed-penalty-state.patch` | Local compatibility port; see [migration audit](compat/migration.json) | Track all committed speculative output tokens exactly once across batch reuse/filter/merge |
+| 35 | `35-compat-tool-final-flush.patch` | Local compatibility port; see [migration audit](compat/migration.json) | Flush all completed tool arguments once, including complete final name chunks |
+| 36 | `36-compat-reasoning-prefix.patch` | Local compatibility port; see [migration audit](compat/migration.json) | Hold trailing partial reasoning and tool markers in normal text |
+| 37 | `37-compat-request-routing-key.patch` | Local compatibility port; see [migration audit](compat/migration.json) | Preserve request routing keys when slicing batched generation requests |
+| 38 | `38-compat-deepgemm-warmup-budget.patch` | Local compatibility port; see [migration audit](compat/migration.json) | Skip DeepGEMM warmup when no supported shape fits available memory |
+| 39 | `39-compat-draft-sentinel.patch` | Local compatibility port; see [migration audit](compat/migration.json) | Keep degenerate Markov greedy draft rows within vocabulary bounds |
+| 40 | `40-compat-cpu-regressions.patch` | Local compatibility port; see [migration audit](compat/migration.json) | CPU regression coverage for migrated behavior and retained V4.1 DSML parsing |
 
 FlashInfer series, applied to the pinned FlashInfer commit:
 

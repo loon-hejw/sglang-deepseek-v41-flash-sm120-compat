@@ -1,0 +1,409 @@
+diff --git a/test/registered/unit/compat_0731/pytest.ini b/test/registered/unit/compat_0731/pytest.ini
+new file mode 100644
+index 0000000..eea2c18
+--- /dev/null
++++ b/test/registered/unit/compat_0731/pytest.ini
+@@ -0,0 +1 @@
++[pytest]
+diff --git a/test/registered/unit/compat_0731/test_compat.py b/test/registered/unit/compat_0731/test_compat.py
+new file mode 100644
+index 0000000..ee83b1a
+--- /dev/null
++++ b/test/registered/unit/compat_0731/test_compat.py
+@@ -0,0 +1,396 @@
++"""CPU regressions against exact locked source bodies, without GPU imports.
++
++Only import-time GPU dependencies and transport DTOs are replaced. AST bodies
++remain unchanged; torch.compile wrappers are removed for CPU portability.
++Native CUDA/Triton execution is explicitly outside this suite.
++"""
++from __future__ import annotations
++
++import abc
++import ast
++import dataclasses
++import functools
++from collections import deque
++import json
++import logging
++import os
++from pathlib import Path
++import re
++from types import SimpleNamespace as NS
++import typing
++import weakref
++
++import pytest
++import torch
++import orjson
++from partial_json_parser.core.exceptions import MalformedJSON
++from partial_json_parser.core.options import Allow
++from pydantic import BaseModel
++
++SOURCE = Path(os.environ.get("SGLANG_COMPAT_SOURCE", Path(__file__).resolve().parents[4]))
++
++
++def load(path, names, namespace=None, owner=None):
++    """Execute selected upstream definitions, without rewriting their bodies."""
++    tree = ast.parse((SOURCE / path).read_text())
++    nodes = tree.body
++    if owner:
++        nodes = next(n for n in nodes if isinstance(n, ast.ClassDef) and n.name == owner).body
++    selected = [n for n in nodes if isinstance(n, (ast.FunctionDef, ast.ClassDef)) and n.name in names]
++    assert {n.name for n in selected} == set(names), (path, names)
++    for node in ast.walk(ast.Module(body=selected, type_ignores=[])):
++        if isinstance(node, ast.FunctionDef):
++            node.decorator_list = [d for d in node.decorator_list if isinstance(d, ast.Name) and d.id in {"staticmethod", "classmethod", "property", "abstractmethod"} or isinstance(d, ast.Attribute) and d.attr == "setter"]
++    ns = namespace if namespace is not None else {}
++    ns.update({k: getattr(typing, k) for k in typing.__all__ if k not in ns})
++    for k, v in dict(torch=torch, abc=abc, weakref=weakref, json=json, re=re,
++                     logging=logging, logger=logging.getLogger("compat_test"),
++                     BaseModel=BaseModel, dataclass=dataclasses.dataclass,
++                     ABC=abc.ABC, abstractmethod=abc.abstractmethod).items():
++        ns.setdefault(k, v)
++    module = ast.Module(body=[ast.ImportFrom(module="__future__", names=[ast.alias(name="annotations")], level=0), *selected], type_ignores=[])
++    exec(compile(ast.fix_missing_locations(module), str(SOURCE / path), "exec"), ns)
++    return ns
++
++
++@pytest.fixture(scope="module")
++def sampling():
++    ns = load("python/sglang/srt/sampling/penaltylib/repetition_penalty.py", ["apply_scaling_penalties"])
++    ns["apply_custom_logit_processor"] = lambda logits, info, **kw: logits.add_(info.custom_bias)
++    load("python/sglang/srt/speculative/dflash_utils.py", ["apply_dflash_verify_logits_adjustments"], ns)
++    load("python/sglang/srt/speculative/dspark_components/dspark_verify.py", ["verify_logits_adjustments_are_noop"], ns)
++    load("python/sglang/srt/speculative/dflash_worker_v2.py", ["_can_skip_verify_logits"], ns, "DFlashWorkerV2")
++    return ns
++
++
++@functools.cache
++def ordinary_info_type():
++    ns = load("python/sglang/srt/sampling/penaltylib/repetition_penalty.py", ["apply_scaling_penalties"])
++    names = ["_apply_pre_grammar_logits_transforms", "_apply_post_grammar_logits_transforms", "apply_logits_bias", "__len__"]
++    load("python/sglang/srt/sampling/sampling_batch_info.py", names, ns, "SamplingBatchInfo")
++    return type("Info", (NS,), {name: ns[name] for name in names})
++
++
++def info(bs, additive=None, scaling=None, bias=None, grammar=None, live=None):
++    return ordinary_info_type()(temperatures=torch.ones(bs), acc_additive_penalties=additive,
++                acc_scaling_penalties=scaling, logit_bias=bias, grammar_mask=grammar,
++                penalizer_orchestrator=live, has_custom_logit_processor=False,
++                is_all_greedy=True, sampling_mask_batch_indices=None)
++
++
++class Mask:
++    def __init__(self, mask): self.vocab_mask, self.grammar = mask, self
++    def apply(self, logits): self.apply_vocab_mask(logits=logits, vocab_mask=self.vocab_mask)
++    def apply_vocab_mask(self, *, logits, vocab_mask): logits.masked_fill_(~vocab_mask, -float("inf"))
++
++
++@pytest.mark.parametrize("bs,width", [(1, 1), (1, 6), (3, 2), (4, 8)])
++@pytest.mark.parametrize("dtype", [torch.float32, torch.bfloat16])
++@pytest.mark.parametrize("case", ["none", "add", "scale", "bias", "combined", "grammar", "all"])
++def test_verify_matches_ordered_sampling(sampling, bs, width, dtype, case):
++    base = torch.tensor([0.25, -0.25, 2., -2., 0.], dtype=dtype).repeat(bs * width, 1)
++    add = torch.tensor([[-1., 1., -.5, .5, 0.]]).repeat(bs, 1) if case in {"add", "combined", "all"} else None
++    scale = torch.tensor([[1.3, 2., .8, 1.5, 1.]]).repeat(bs, 1) if case in {"scale", "combined", "all"} else None
++    bias = torch.tensor([[.1, -.1, .5, .2, 0.]]).repeat(bs, 1) if case in {"bias", "combined", "all"} else None
++    mask = Mask(torch.tensor([[True, True, False, True, False]]).repeat(bs, 1)) if case in {"grammar", "all"} else None
++    expected = base.clone()
++    if add is not None: expected.add_(add.repeat_interleave(width, dim=0))
++    if scale is not None: sampling["apply_scaling_penalties"](expected, scale.repeat_interleave(width, dim=0))
++    if mask: mask.apply_vocab_mask(logits=expected, vocab_mask=mask.vocab_mask.repeat_interleave(width, dim=0))
++    if bias is not None: expected.add_(bias.repeat_interleave(width, dim=0))
++    si = info(bs, add, scale, bias, mask)
++    sampling["apply_dflash_verify_logits_adjustments"](next_token_logits=base, sampling_info=si, draft_token_num=width)
++    torch.testing.assert_close(base, expected, rtol=0, atol=0)
++    assert sampling["verify_logits_adjustments_are_noop"](si) == (case == "none")
++    worker = NS(_selector_sample=None)
++    assert sampling["_can_skip_verify_logits"](worker, NS(has_grammar=bool(mask), return_logprob=False), si) == (case == "none")
++
++
++def test_mask_does_not_create_nan(sampling):
++    logits = torch.tensor([[float("inf"), 2.], [float("inf"), 3.]])
++    mask = Mask(torch.tensor([[False, True]]))
++    sampling["apply_dflash_verify_logits_adjustments"](next_token_logits=logits, sampling_info=info(1, grammar=mask), draft_token_num=2)
++    assert torch.isneginf(logits[:, 0]).all() and not torch.isnan(logits).any()
++
++
++def test_live_penalizer_and_custom_processor(sampling):
++    class Live:
++        is_required = True
++        def apply(self, logits, repeat=1):
++            logits.add_(-2)
++            sampling["apply_scaling_penalties"](logits, torch.tensor([[2., 3.]]).repeat_interleave(repeat, 0))
++    si = info(1, bias=torch.tensor([[1., .5]]), live=Live())
++    si.has_custom_logit_processor = True; si.custom_bias = .25
++    logits = torch.tensor([[1., -1.], [3., -2.]])
++    expected = logits.clone().add_(.25).add_(-2)
++    sampling["apply_scaling_penalties"](expected, torch.tensor([[2., 3.], [2., 3.]]))
++    expected.add_(torch.tensor([[1., .5]]))
++    sampling["apply_dflash_verify_logits_adjustments"](next_token_logits=logits, sampling_info=si, draft_token_num=2)
++    torch.testing.assert_close(logits, expected)
++
++
++@pytest.mark.parametrize("width,shape", [(0,(1,2)), (-1,(1,2)), (3,(2,2)), (1,(1,2,1))])
++def test_invalid_verify_shape(sampling,width,shape):
++    with pytest.raises(ValueError):
++        sampling["apply_dflash_verify_logits_adjustments"](next_token_logits=torch.zeros(shape), sampling_info=info(1), draft_token_num=width)
++
++
++@pytest.fixture(scope="module")
++def penalty_classes():
++    ns = {"is_pin_memory_available": lambda device: False}
++    load("python/sglang/srt/sampling/penaltylib/orchestrator.py", ["BatchedPenalizerOrchestrator", "_BatchedPenalizer"], ns)
++    for file, name in [("frequency_penalty", "BatchedFrequencyPenalizer"), ("presence_penalty", "BatchedPresencePenalizer"), ("repetition_penalty", "BatchedRepetitionPenalizer"), ("min_new_tokens", "BatchedMinNewTokensPenalizer")]:
++        names = [name] + (["apply_scaling_penalties"] if file == "repetition_penalty" else [])
++        load(f"python/sglang/srt/sampling/penaltylib/{file}.py", names, ns)
++    return ns
++
++
++class Batch:
++    def __init__(self, reqs): self.reqs, self.device = reqs, "cpu"
++
++
++def request(rid, outputs):
++    return NS(rid=rid, output_ids=outputs, sampling_params=NS(frequency_penalty=.5, presence_penalty=.2, repetition_penalty=1.5, min_new_tokens=3, stop_token_ids={7}), eos_token_ids={7}, tokenizer=NS(additional_stop_token_ids=set(), eos_token_id=7))
++
++
++def orch(ns, reqs):
++    batch = Batch(reqs)
++    value = ns["BatchedPenalizerOrchestrator"](8, batch, {ns[n] for n in ["BatchedFrequencyPenalizer", "BatchedPresencePenalizer", "BatchedRepetitionPenalizer", "BatchedMinNewTokensPenalizer"]})
++    return value, batch
++
++
++def assert_state(ns, o, histories):
++    freq = o.penalizers[ns["BatchedFrequencyPenalizer"]].cumulated_frequency_penalties
++    presence = o.penalizers[ns["BatchedPresencePenalizer"]].cumulated_presence_penalties
++    repeat = o.penalizers[ns["BatchedRepetitionPenalizer"]].cumulated_repetition_penalties
++    lengths = o.penalizers[ns["BatchedMinNewTokensPenalizer"]].len_output_tokens
++    expected = torch.zeros_like(freq)
++    for i, history in enumerate(histories):
++        for token in history: expected[i, token] += .5
++    torch.testing.assert_close(freq, expected)
++    torch.testing.assert_close(presence, torch.where(expected > 0, .2, 0.))
++    torch.testing.assert_close(repeat, torch.where(expected > 0, 1.5, 1.))
++    assert lengths.flatten().tolist() == [len(x) for x in histories]
++
++
++def test_committed_history_once_and_min_tokens(penalty_classes):
++    ns=penalty_classes;r1=request("a",[]);r2=request("b",[2,2,3]);o,b=orch(ns,[r1,r2])
++    o.sync_spec_output_tokens();assert_state(ns,o,[[],[2,2,3]])
++    o.sync_spec_output_tokens();assert_state(ns,o,[[],[2,2,3]])
++    logits=torch.zeros(2,8);o.accumulate_additive_penalties(logits)
++    assert torch.isneginf(logits[0,7]) and torch.isfinite(logits[1,7])
++    r1.output_ids.extend([1,1,4]);r2.output_ids.append(2)
++    o.sync_spec_output_tokens();assert_state(ns,o,[[1,1,4],[2,2,3,2]])
++    logits=torch.zeros(2,8);o.accumulate_additive_penalties(logits);assert torch.isfinite(logits[:,7]).all()
++
++
++def test_history_filter_merge_retraction(penalty_classes):
++    ns=penalty_classes;a=request("a",[1,1]);b=request("b",[3]);o,batch=orch(ns,[a,b]);o.sync_spec_output_tokens()
++    o.filter(torch.tensor([1]));batch.reqs=[b];b.output_ids.extend([4,4]);o.sync_spec_output_tokens();assert_state(ns,o,[[3,4,4]])
++    c=request("c",[5,5]);other,otherbatch=orch(ns,[c]);other.sync_spec_output_tokens()
++    o.merge(other);batch.reqs=[b,c];o.sync_spec_output_tokens();assert_state(ns,o,[[3,4,4],[5,5]])
++    b.output_ids.append(6);c.output_ids.append(1);o.sync_spec_output_tokens();assert_state(ns,o,[[3,4,4,6],[5,5,1]])
++    fresh,freshbatch=orch(ns,[b,c]);fresh.sync_spec_output_tokens();assert_state(ns,fresh,[b.output_ids,c.output_ids])
++
++
++def test_history_shrink_rejected(penalty_classes):
++    r=request("a",[1,2]);o,b=orch(penalty_classes,[r]);o.sync_spec_output_tokens();r.output_ids.pop()
++    with pytest.raises(ValueError,match="shrank"): o.sync_spec_output_tokens()
++
++
++def test_spec_prepare_uses_committed_history():
++    events=[]
++    ns={"get_exec":lambda:NS(mamba=NS(enable_mamba_extra_buffer_lazy=False))}
++    load("python/sglang/srt/speculative/spec_utils.py",["spec_prepare_for_decode"],ns)
++    batch=NS(spec_algorithm=NS(is_dflash_family=lambda:True),sampling_info=NS(penalizer_orchestrator=NS(is_required=True,sync_spec_output_tokens=lambda:events.append("history"))),spec_info=NS(prepare_for_decode=lambda batch:events.append("prepare")))
++    ns["spec_prepare_for_decode"](batch)
++    assert events==["history","prepare"]
++
++
++@pytest.fixture(scope="module")
++def reasoning():
++    return load("python/sglang/srt/parser/reasoning_parser.py",["StreamingParseResult","BaseReasoningFormatDetector"])["BaseReasoningFormatDetector"]
++
++
++@pytest.mark.parametrize("split",range(1,7))
++def test_normal_text_partial_think_marker(reasoning,split):
++    p=reasoning("<think>","</think>")
++    out=[p.parse_streaming_increment("intro "+"<think>"[:split]),p.parse_streaming_increment("<think>"[split:]+"reason</think>answer"),p.finish()]
++    assert ''.join(r.normal_text for r in out)=="intro answer"
++    assert ''.join(r.reasoning_text for r in out)=="reason"
++
++
++@pytest.mark.parametrize("split",range(1,8))
++def test_reasoning_partial_end_marker(reasoning,split):
++    p=reasoning("<think>","</think>",force_reasoning=True)
++    out=[p.parse_streaming_increment("reason"+"</think>"[:split]),p.parse_streaming_increment("</think>"[split:]+"answer"),p.finish()]
++    assert ''.join(r.normal_text for r in out)=="answer"
++    assert ''.join(r.reasoning_text for r in out)=="reason"
++
++
++def test_incomplete_plain_suffix_not_lost(reasoning):
++    p=reasoning("<think>","</think>");out=[p.parse_streaming_increment("literal <th"),p.finish()]
++    assert ''.join(r.normal_text for r in out)=="literal <th"
++
++
++@pytest.fixture(scope="module")
++def detectors():
++    from partial_json_parser import loads as partial_loads
++    ns={"orjson":orjson,"MalformedJSON":MalformedJSON,"Allow":Allow,
++        "envs":NS(SGLANG_FORWARD_UNKNOWN_TOOLS=NS(get=lambda:False)),
++        "_GetInfoFunc":typing.Callable,"Tool":NS,"ToolChoice":typing.Any,
++        "JSONDecodeError":json.JSONDecodeError,"JSONDecoder":json.JSONDecoder,"WHITESPACE":json.decoder.WHITESPACE}
++    load("python/sglang/srt/function_call/core_types.py",["ToolCallItem","StreamingParseResult","StructureInfo"],ns)
++    ns["ToolCallItem"].model_rebuild(_types_namespace=ns)
++    ns["StreamingParseResult"].model_rebuild(_types_namespace=ns)
++    load("python/sglang/srt/function_call/utils.py",["_find_common_prefix","_is_complete_json","_partial_json_loads"],ns)
++    ns["partial_json_parser"] = __import__('partial_json_parser')
++    load("python/sglang/srt/function_call/base_format_detector.py",["BaseFormatDetector"],ns)
++    load("python/sglang/srt/function_call/deepseekv32_detector.py",["_reject_json_constant","DeepSeekV32Detector"],ns)
++    load("python/sglang/srt/function_call/deepseekv41_detector.py",["DeepSeekV41Detector"],ns)
++    return ns
++
++
++@pytest.mark.parametrize("chunk_size",[1,2,3,7,10000])
++@pytest.mark.parametrize("variant",["normal","bare","two","malformed","markdown"])
++def test_v41_tool_protocol(detectors,chunk_size,variant):
++    invoke='<｜DSML｜ invoke name="probe"><｜DSML｜ parameter name="text" string="true"> hello </｜DSML｜ parameter><｜DSML｜ parameter name="n" string="false">2</｜DSML｜ parameter></｜DSML｜ invoke>'
++    plain='## Title\n\n- first\n- second\n\n| A | B |\n| --- | --- |\n| 1 | 2 |\n'
++    text={'normal':'before\n\n<｜DSML｜ calls>'+invoke+'</｜DSML｜ calls>', 'bare':invoke, 'two':'<｜DSML｜ calls>'+invoke+invoke+'</｜DSML｜ calls>', 'malformed':'before\n\n<｜DSML｜ calls><｜DSML｜ invoke name="probe"><｜DSML｜ parameter name="x" string="true">', 'markdown':plain}[variant]
++    p=detectors['DeepSeekV41Detector']();tools=[NS(function=NS(name='probe'))]
++    out=[p.parse_streaming_increment(text[i:i+chunk_size],tools) for i in range(0,len(text),chunk_size)];out.append(p.finish(tools))
++    calls=[c for r in out for c in r.calls];body=''.join(r.normal_text for r in out)
++    assert body==({'normal':'before','bare':'','two':'','malformed':'before','markdown':plain}[variant])
++    assert len(calls)==({'normal':1,'bare':1,'two':2,'malformed':0,'markdown':0}[variant])
++    assert all(json.loads(c.parameters)=={'text':' hello ','n':2} for c in calls)
++
++
++class DTO(NS):
++    def model_dump_json(self):return json.dumps(self,default=lambda v:vars(v),ensure_ascii=False)
++
++
++def flush_function():
++    ns={name:DTO for name in ['ToolCall','FunctionResponse','ChatCompletionResponseStreamChoice','DeltaMessage','ChatCompletionStreamResponse']}
++    return load('python/sglang/srt/entrypoints/openai/serving_chat.py',['_check_for_unstreamed_tool_args'],ns,'OpenAIServingChat')['_check_for_unstreamed_tool_args']
++
++
++def test_flush_all_tools_is_idempotent():
++    fn=flush_function();d=NS(prev_tool_call_arr=[{'arguments':{'a':1}},{'arguments':'{"b": 2}'},{}],streamed_args_for_tool=['','{"b":',''])
++    output=fn(None,d,{'meta_info':{'id':'test'}},NS(model='unit'),0,0)
++    chunks=[json.loads(s.removeprefix('data: ')) for s in output.strip().split('\n\n')]
++    assert [c['choices'][0]['delta']['tool_calls'][0]['index'] for c in chunks]==[0,1]
++    assert fn(None,d,{'meta_info':{'id':'test'}},NS(model='unit'),0,0) is None
++
++
++def test_final_complete_json_name_chunk_keeps_arguments(detectors):
++    class Detector(detectors['BaseFormatDetector']):
++        def detect_and_parse(self,*a):pass
++        def has_tool_call(self,*a):return True
++        def structure_info(self):return None
++    p=Detector();tools=[NS(function=NS(name='probe'))]
++    p.parse_streaming_increment('{"name":"probe","arguments":{"v":1}}',tools)
++    assert p.prev_tool_call_arr[0]['arguments']=={'v':1}
++    output=flush_function()(None,p,{'meta_info':{'id':'test'}},NS(model='unit'),0,0)
++    assert json.loads(json.loads(output.removeprefix('data: '))['choices'][0]['delta']['tool_calls'][0]['function']['arguments'])=={'v':1}
++
++
++def test_request_slice_preserves_key():
++    ns={'GenerateReqInput':lambda **kw:NS(**kw)}
++    load('python/sglang/srt/managers/io_struct.py',['__getitem__'],ns,'GenerateReqInput')
++    class Request:
++        routing_key='tenant/session';require_reasoning=True;rid=['r0','r1']
++        def __getattr__(self,name):
++            if name=='_get_positional_embed_overrides_item':return lambda i:None
++            if name in {'image_data','video_data','audio_data','sampling_params','watermark','return_logprob','logprob_start_len','top_logprobs_num','token_ids_logprob','return_sampling_mask','sampling_logprobs_mode'}:return [None,None]
++            return None
++    r=Request();a=ns['__getitem__'](r,1)
++    assert a.routing_key==r.routing_key and a.require_reasoning
++    assert ns['__getitem__'](r,1) is a
++
++
++@pytest.mark.parametrize('budget,expected',[(0,None),(7,None),(8,8),(10,8),(16,16),(100,64)])
++def test_deepgemm_budget_selection(budget,expected):
++    ns={'_BaseWarmupExecutor':NS(get_memory_requirement=lambda kind,**kw:kw['max_m'])}
++    load('python/sglang/srt/layers/deep_gemm_wrapper/compile_utils.py',['_select_max_m_within_budget'],ns)
++    assert ns['_select_max_m_within_budget'](0,[64,8,16],1,1,1,budget)==expected
++
++
++class Pointer:
++    def __init__(self,tensor,offset=0):self.tensor,self.offset=tensor,offset
++    def __add__(self,n):return Pointer(self.tensor,self.offset+n)
++
++
++class TL:
++    int64=torch.int64
++    program_id=staticmethod(lambda axis:0)
++    arange=staticmethod(torch.arange)
++    where=staticmethod(torch.where)
++    max=staticmethod(lambda x,axis:torch.max(x,dim=axis).values)
++    min=staticmethod(lambda x,axis:torch.min(x,dim=axis).values)
++    @staticmethod
++    def load(ptr,mask=None,other=0):
++        safe=torch.where(mask,ptr.offset,0) if mask is not None else ptr.offset
++        v=ptr.tensor[safe]
++        return torch.where(mask,v,other) if mask is not None else v
++    @staticmethod
++    def store(ptr,value):ptr.tensor[ptr.offset]=value
++
++
++@pytest.mark.parametrize('scores,indices,expected',[
++    ([float('nan'),float('nan')],[2147483647,2147483647],0),
++    ([2.,2.],[4,2],2),([1.,3.],[4,2],2),
++    ([-float('inf'),-float('inf')],[0,4],0)])
++def test_exact_markov_combine_body_cpu(scores,indices,expected):
++    path='python/sglang/kernels/ops/speculative/dspark/dspark_draft_model.py'
++    names=[n.name for n in ast.parse((SOURCE/path).read_text()).body if isinstance(n,ast.FunctionDef) and 'combine' in n.name]
++    assert len(names)==1
++    ns={'tl':TL,'_IDX_SENTINEL':2147483647};load(path,names,ns)
++    result=torch.full((1,),-1,dtype=torch.int64)
++    ns[names[0]](Pointer(torch.tensor(scores)),Pointer(torch.tensor(indices)),Pointer(result),2,BLOCK_TILES=2)
++    assert result.item()==expected
++
++
++def test_cpu_only():assert not torch.cuda.is_initialized()
++
++
++@pytest.mark.parametrize("drafts", [0, 1, 4, 5, 7, 15, 31])
++def test_v41_ratio2_ring_already_scales(drafts):
++    ns = {"ONLINE_C128": False}
++    load("python/sglang/srt/mem_cache/deepseek_v4_memory_pool.py", ["get_compress_state_ring_size"], ns)
++    ring = ns["get_compress_state_ring_size"](2, drafts)
++    assert ring >= drafts + 2 and ring & (ring - 1) == 0
++
++
++@pytest.mark.parametrize("extend,new,expected", [(1, 1, 18), (32, 32, 80), (128, 128, 144), (256, 20, 272)])
++def test_cached_swa_prefix_budget_already_fixed(extend, new, expected):
++    ns = load("python/sglang/srt/mem_cache/prefill_budget.py", ["estimate_swa_kv_tokens"])
++    assert ns["estimate_swa_kv_tokens"](extend, new, sliding_window_size=128, page_size=16) == expected
++
++
++def test_prefill_watermark_already_expires():
++    ns = {"deque": deque}
++    load("python/sglang/srt/managers/prefill_delayer.py", ["RecentPrefillBatchSizeTracker"], ns)
++    tracker = ns["RecentPrefillBatchSizeTracker"](3)
++    assert [tracker.observe_attempt(n) for n in [100, 2, 3, 4]] == [100, 100, 100, 4]
++
++
++def test_warmup_does_not_allocate_an_unfit_shape():
++    events = []
++    class Executor:
++        @staticmethod
++        def get_memory_requirement(kind, **kw): return kw["max_m"]
++        @staticmethod
++        def create(kind, **kw):
++            raise AssertionError("warmup attempted allocation beyond available memory")
++    ns = {"_BaseWarmupExecutor": Executor,
++          "DeepGemmKernelType": NS(GROUPED_GEMM_NT_F8F8BF16_CONTIG=1, GROUPED_GEMM_NT_BF16_CONTIG=2),
++          "disable_symmetric_memory_context": lambda: "saved",
++          "restore_symmetric_memory_context": lambda saved: events.append(saved),
++          "get_available_gpu_memory": lambda **kw: 0,
++          "torch": NS(cuda=NS(current_device=lambda: 0))}
++    path = "python/sglang/srt/layers/deep_gemm_wrapper/compile_utils.py"
++    if "def _select_max_m_within_budget" in (SOURCE / path).read_text():
++        load(path, ["_select_max_m_within_budget"], ns)
++    load(path, ["_compile_deep_gemm_one_type_all"], ns)
++    ns["_compile_deep_gemm_one_type_all"](NS(name="test"), 1, 1, 1, [8, 16, 32])
++    assert events == ["saved"]

@@ -24,6 +24,16 @@ uv pip uninstall --python "$py" flashinfer-python flashinfer-cubin flashinfer-ji
 # and fail FlashInfer's AOT-provider version check.
 site=$(pyrun -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])')
 rm -rf "$site"/flashinfer "$site"/flashinfer_cubin "$site"/flashinfer_jit_cache "$site"/deep_gemm
+# FlashInfer's metadata hook otherwise starts a nested uv install while the
+# outer installer holds /opt/sglang/.lock. Install its declared compiler-only
+# requirements first, then disable hook-owned package mutations. NCCL and NIXL
+# remain at the vendor versions checked by the candidate dependency gate.
+mapfile -t tile_compiler_deps < <(cd "$src/flashinfer" && "$py" -c \
+  'from build_utils import get_cuda_tile_compile_dependency_requirements; print("\n".join(get_cuda_tile_compile_dependency_requirements()))')
+(( ${#tile_compiler_deps[@]} > 0 ))
+printf '%s\n' "${tile_compiler_deps[@]}" > "$root/provenance/stack/tile-compiler-requirements.txt"
+uv pip install --python "$py" --no-deps "${tile_compiler_deps[@]}"
+export FLASHINFER_BUILD_NO_PIP=1
 # nvidia-cutlass-dsl follows SGLang's pin, which the candidate's SGLang install applies.
 (cd "$src/flashinfer" && uv pip install --python "$py" --no-build-isolation '.[cu13]')
 # No published wheel matches FlashInfer main: build the cubin package from the

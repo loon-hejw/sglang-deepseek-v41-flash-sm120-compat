@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "lineage": "dsv41-platform",
-  "candidate_tag": "v0.4.4-rc.1",
+  "candidate_tag": "v0.4.4-rc.2",
   "platform": "linux/amd64",
   "base": {
     "tag": "docker.io/lmsysorg/sglang:nightly-dev-cu13-20261019-3c560089",

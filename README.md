@@ -1,6 +1,6 @@
 # SGLang for DeepSeek-V4.1-Flash on SM120
 
-**Local compatibility fork.** Start with [中文使用说明](README.zh-CN.md). The local candidate is `local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.1`; it has not been built, published or GPU-validated. Use `examples/serve-compat-tp4.sh` for the fork. Published images and measurements below describe the upstream baseline only. See [migration accounting](compat/migration.json) and [validation status](compat/validation.json).
+**Local compatibility fork.** Start with [中文使用说明](README.zh-CN.md). The local candidate is `local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.2`; it has not been built, published or GPU-validated. Use `examples/serve-compat-tp4.sh` for the fork. Published images and measurements below describe the upstream baseline only. See [migration accounting](compat/migration.json) and [validation status](compat/validation.json).
 
 
 An SGLang image, built from pinned sources, for [`deepseek-ai/DeepSeek-V4.1-Flash-1017`](https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash-1017) on four RTX PRO 6000 Blackwell (SM120) GPUs over PCIe: tensor parallelism 4 with expert parallelism 2, FP8 KV cache, DSpark speculative decoding, a 1,048,576-token context, image input and a host-RAM prefix cache.

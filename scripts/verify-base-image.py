@@ -90,7 +90,14 @@ def main():
     manifest, config = validate(receipt, locked)
     if args.image:
         installed = json.loads(subprocess.check_output(['docker', 'image', 'inspect', args.image]))[0]
-        assert installed['Id'] == manifest['config']['digest'], 'Imported image ID mismatch'
+        expected_manifest = digest(receipt.get('platform_manifest_raw', receipt['manifest_raw']).encode())
+        if installed['Id'] != manifest['config']['digest']:
+            # Docker's containerd image store can identify an image by manifest
+            # instead of the classic store's config digest. Verify both its
+            # descriptor and the config exposed by the daemon in that case.
+            assert installed['Id'] in (expected_manifest, locked.rsplit('@', 1)[1]), 'Imported image ID mismatch'
+            assert installed.get('Descriptor', {}).get('digest') == installed['Id'], 'Image descriptor mismatch'
+            assert installed['Config'] == config['config'], 'Image configuration mismatch'
         assert installed['Os'] == 'linux' and installed['Architecture'] == 'amd64'
         assert installed['RootFS']['Layers'] == config['rootfs']['diff_ids'], 'RootFS layers mismatch'
     print(json.dumps({'verified': True, 'locked_base': locked, 'config_digest': manifest['config']['digest'], 'platform': 'linux/amd64', 'local_image_verified': bool(args.image), 'compressed_bytes': sum(x['size'] for x in manifest['layers'])}))

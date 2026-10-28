@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "recorded_at_utc": "2026-10-27T10:31:59.319049+00:00",
+  "recorded_at_utc": "2026-10-28T02:49:43.792680+00:00",
   "candidate": "v0.4.4-rc.3",
   "baseline_project_commit": "11c525d0234dc25e167e4d6bb0fe9fe757762f5f",
   "platform": {
@@ -77,12 +77,13 @@
     "verify_patches_full_command": {
       "status": "incomplete_network",
       "source_trees": "passed",
-      "base_image_manifest": "not_verified",
+      "base_image_manifest": "passed_separately_via_verified_mirror",
       "command": "COMPAT_SOURCE_FETCH=archive bash scripts/verify-patches.sh",
-      "reason": "Docker Hub auth.docker.io:443 connection timed out; source checks completed before the registry request."
+      "reason": "Docker Hub auth.docker.io:443 connection timed out; source checks completed before the registry request.",
+      "note": "The original all-in-one command was not rerun. Its base-image check is now covered by raw manifest/config hashes and local RootFS verification; recursive source preparation and installed identity gates also passed during the image build."
     },
     "build_entrypoint": {
-      "status": "dry_run_passed",
+      "status": "passed",
       "image": "local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.3",
       "required_arguments_checked": [
         "FLASHINFER_KEY matches stack.json",
@@ -106,10 +107,41 @@
       ]
     },
     "full_image_build": {
-      "status": "not_run"
+      "status": "passed",
+      "image": "local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.3",
+      "image_id": "sha256:f124217b8a003822be10c11cb107739e7a2259c29b3b11c0aed18dea58bae356",
+      "source_revision": "d6528a773d1cda402de06844ba5270d94deb0d10",
+      "started_at": "2026-10-28T01:35:08.385852+00:00",
+      "completed_at": "2026-10-28T02:46:49.788894+00:00",
+      "exit_code": 0,
+      "log": "artifacts/remote-build/build.log",
+      "evidence": "artifacts/remote-build/summary.json",
+      "note": "Built and loaded locally on Linux amd64; not published. Preinstalled the pinned FlashInfer source compiler requirements to prevent nested uv installer locking; passed the existing intended Triton unit-test build setting through TRITON_APPEND_CMAKE_ARGS. Reused checksum-verified cubin artifacts through a temporary loopback HTTP cache; the original pinned downloader still verified manifest and file hashes."
     },
     "installed_image_cpu_suite": {
-      "status": "not_run"
+      "status": "passed",
+      "tests": 1376,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1,
+      "passed": 1375,
+      "compat_0731_passed": 132,
+      "skip_reasons": [
+        {
+          "test": "registered.kernels.ops.attention.dsv4.test_dsv41_compact_verify.TestEngramCompactVerify.test_cuda_graph_replay_follows_layout",
+          "reason": "requires CUDA"
+        }
+      ],
+      "pytest_summary": {
+        "passed": 895,
+        "skipped": 1,
+        "warnings": 132,
+        "subtests_passed": 480,
+        "duration": "249.05s (0:04:09)"
+      },
+      "junit": "artifacts/remote-build/image-provenance/cpu-tests.xml",
+      "method": "Locked upstream CPU suite plus all 132 compatibility cases in the built image. Compatibility cases retain AST import isolation and Triton tensor emulation; this is not native GPU or model inference validation.",
+      "counting_note": "JUnit counts include 480 passing subtests: 895 passing pytest cases + 480 passing subtests + 1 CUDA skip = 1376 entries. All 132 compatibility cases are included in the 895 passing pytest cases."
     },
     "native_cuda_triton_cuda_graph": {
       "status": "not_run"
@@ -118,14 +150,64 @@
       "status": "not_run"
     },
     "deployment": {
-      "status": "unchanged"
+      "status": "unchanged",
+      "container_id_start_time_restart_count_ports_unchanged": true,
+      "health_http_status": 200,
+      "before": "artifacts/remote-build/service-before.json",
+      "after": "artifacts/remote-build/service-after.json"
+    },
+    "base_image_identity": {
+      "status": "passed",
+      "manifest_digest": "sha256:5513366f48d8a9416de4b3623af23e7de2e7875dc8de7c8b4fce32ee01073c03",
+      "config_digest": "sha256:2e152727f0a5ce999172ec48203b2b292d41b3cb370976827718870557899caa",
+      "platform": "linux/amd64",
+      "checks": [
+        "raw pinned manifest SHA256",
+        "raw config SHA256",
+        "Docker configuration identity",
+        "ordered RootFS diff IDs"
+      ],
+      "receipt": "artifacts/base-receipt.json"
+    },
+    "installed_source_identity": {
+      "status": "passed",
+      "method": "Unchanged prepare-sources.py verified locked commits, recursive submodules, patch hashes and final trees using a read-only Git object cache; verify-installed.py rechecked all four installed source trees and package identities.",
+      "cache_receipt": "artifacts/remote-build/source-cache-receipt.json",
+      "imports": "artifacts/remote-build/image-provenance/import-receipt.json"
+    },
+    "installed_dependencies": {
+      "status": "passed",
+      "allowed_vendor_conflicts": [
+        "The package `ai-dynamo-runtime` requires `pydantic>=2.10.6,<=2.13.5`, but `2.14.1` is installed",
+        "The package `cosmos-guardrail` requires `imageio>=2.37.0`, but `2.36.0` is installed",
+        "The package `cosmos-guardrail` requires `opencv-python>=4.10.0.84`, but it's not installed",
+        "The package `retinaface-py` requires `opencv-python`, but it's not installed",
+        "The package `nixl` requires `nixl-cu12==1.5.0`, but it's not installed"
+      ],
+      "receipt": "artifacts/remote-build/image-provenance/dependency-check.json",
+      "note": "No rejected or unrecognized conflicts, unexpected packages, or required-version mismatches."
+    },
+    "resource_guard": {
+      "status": "passed",
+      "samples": 106,
+      "minimum_available_memory_gib": 202.41,
+      "minimum_free_disk_gib": 3900.91,
+      "memory_limit_gib": 96,
+      "disk_limit_gib": 200,
+      "record": "artifacts/remote-build/resources.jsonl"
     }
   },
   "remaining_validation": [
-    "Verify the pinned base manifest when Docker Hub is reachable.",
-    "Build the image on Linux amd64 and run its installed-source and dependency gates.",
     "Run native CUDA/Triton/Graph tests and controlled API comparisons on isolated SM120 GPUs.",
     "Verify overlap history visibility and within-verify-block penalty behavior against a DSPARK-disabled control; CPU committed-history checks alone do not establish end-to-end sampling equivalence.",
     "Exercise long context, padded batches, cache reuse, cancellation, SWA eviction and real workload format cases."
-  ]
+  ],
+  "build_platform": {
+    "system": "Linux",
+    "machine": "amd64",
+    "python": "3.12.15",
+    "torch": "2.14.1+cu130",
+    "device": "cpu",
+    "max_jobs": 4
+  }
 }

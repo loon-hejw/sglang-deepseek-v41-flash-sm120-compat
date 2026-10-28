@@ -90,3 +90,5 @@ python3 scripts/validate-gpu.py --baseline-url http://127.0.0.1:18000/v1 \
 `COMPAT_BASE_IMAGE` 可指定提供同一锁定摘要的镜像代理，`COMPAT_BASE_SOURCE` 指定获取基础镜像校验凭据的仓库地址。镜像已离线导入时，设置 `COMPAT_BASE_RECEIPT` 指向 `scripts/verify-base-image.py` 生成的记录；构建会检查清单摘要、平台、配置摘要和实际 RootFS 层，不能只凭相同标签认定镜像一致。
 
 `python3 scripts/run-build-monitored.py` 运行构建并记录日志及退出状态，每分钟检查资源。可用内存低于 96 GiB 或项目所在盘剩余低于 200 GiB 时终止本次构建。该入口不会启动、停止或替换推理服务，也不会下载模型权重。运行记录保存在 `artifacts/remote-build/`。
+
+当已有同版本镜像保留官方 Git 对象时，可将核验过的仓库与递归子模块整理成独立缓存，通过 `COMPAT_SOURCE_CACHE` 供构建使用。缓存只在编译步骤只读挂载，Git 仍按锁定提交检出，原有补丁及源码树校验继续执行；运行镜像不携带这份中转缓存。

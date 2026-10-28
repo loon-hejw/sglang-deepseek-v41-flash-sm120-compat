@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "recorded_at_utc": "2026-10-27T10:31:59.319049+00:00",
-  "candidate": "v0.4.4-rc.2",
+  "candidate": "v0.4.4-rc.3",
   "baseline_project_commit": "11c525d0234dc25e167e4d6bb0fe9fe757762f5f",
   "platform": {
     "system": "Darwin",
@@ -83,7 +83,7 @@
     },
     "build_entrypoint": {
       "status": "dry_run_passed",
-      "image": "local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.2",
+      "image": "local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.3",
       "required_arguments_checked": [
         "FLASHINFER_KEY matches stack.json",
         "STACK_IMAGE matches computed stack key",

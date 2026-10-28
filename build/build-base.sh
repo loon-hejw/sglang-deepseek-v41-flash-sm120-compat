@@ -53,8 +53,10 @@ uv pip install --python "$py" --no-deps "$root"/wheels/*.whl
 sha256sum "$root"/wheels/*.whl > "$root/provenance/stack/wheels.sha256"
 # Triton: the pinned release branch plus the triton_patches backports replaces the
 # vendor's published wheel of the same version (LLVM is fetched by its setup).
+# This setup.py does not forward TRITON_BUILD_UT from the environment. Pass it
+# through the supported CMake argument hook to avoid fetching unused test code.
 (cd "$src/triton" && TRITON_HOME="$root/triton-home" TRITON_BUILD_WITH_CLANG_LLD=0 \
-  TRITON_BUILD_PROTON=OFF TRITON_BUILD_UT=OFF \
+  TRITON_BUILD_PROTON=OFF TRITON_APPEND_CMAKE_ARGS="-DTRITON_BUILD_UT=OFF" \
   "$py" -m pip wheel --no-deps --no-build-isolation -w "$root/triton-wheel" .)
 uv pip install --python "$py" --no-deps --reinstall "$root"/triton-wheel/triton-*.whl
 sha256sum "$root"/triton-wheel/*.whl >> "$root/provenance/stack/wheels.sha256"

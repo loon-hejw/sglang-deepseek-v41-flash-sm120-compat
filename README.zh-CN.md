@@ -2,7 +2,7 @@
 
 保留 V4.1 的模型实现、SM120 优化和依赖栈，将 0731 项目中仍适用而缺失的修复迁入当前代码。基线是 ormandj 项目的 `11c525d0234dc25e167e4d6bb0fe9fe757762f5f`，SGLang 固定为 `62cee1b15c22350b17a9256fc6ad5777feb2ec70`。旧补丁来自 ombori 项目的 `79bbc001db042fc85dc2b15e4175210eaec3e78e`。
 
-本项目候选镜像名为 `local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.2`。尚未构建、发布或进行 GPU 验收；不保证速度或回答质量提升。上游文档中的性能数字仅属于原版镜像。
+本项目候选镜像名为 `local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.3`。尚未构建、发布或进行 GPU 验收；不保证速度或回答质量提升。上游文档中的性能数字仅属于原版镜像。
 
 ## 已完成的迁移
 
@@ -58,7 +58,7 @@ bash scripts/build-compat.sh
 
 ```bash
 export MODEL_DIR=/srv/models/DeepSeek-V4.1-Flash-1017
-export CACHE_DIR=/srv/cache/sglang-deepseek-v41-compat-v0.4.4-rc.2-tp4
+export CACHE_DIR=/srv/cache/sglang-deepseek-v41-compat-v0.4.4-rc.3-tp4
 bash examples/serve-compat-tp4.sh
 ```
 
@@ -94,3 +94,5 @@ python3 scripts/validate-gpu.py --baseline-url http://127.0.0.1:18000/v1 \
 当已有同版本镜像保留官方 Git 对象时，可将核验过的仓库与递归子模块整理成独立缓存，通过 `COMPAT_SOURCE_CACHE` 供构建使用。缓存只在编译步骤只读挂载，Git 仍按锁定提交检出，原有补丁及源码树校验继续执行；运行镜像不携带这份中转缓存。
 
 构建会先安装锁定 FlashInfer 源码声明的 CUDA 编译工具依赖，再设置 `FLASHINFER_BUILD_NO_PIP=1`，避免其元数据钩子在外层 `uv` 持有环境锁时再次执行安装。NCCL、NIXL 和 CUDA 运行时继续由原有锁定底座及依赖检查约束。
+
+Triton 的测试构建开关通过 `TRITON_APPEND_CMAKE_ARGS="-DTRITON_BUILD_UT=OFF"` 显式传入 CMake；锁定版本的 `setup.py` 不转发同名环境变量。此设置与原配方关闭 Triton 自身测试构建的意图一致，镜像内 SGLang 和兼容回归门禁仍完整运行。

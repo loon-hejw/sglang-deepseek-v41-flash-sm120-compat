@@ -1,6 +1,6 @@
-# Local compatibility candidate v0.4.4-rc.2
+# Local compatibility candidate v0.4.4-rc.3
 
-Ports missing 0731 correctness fixes onto the pinned V4.1 source: speculative penalties and committed-token accounting, tool argument completion, reasoning-marker fragments, routing-key preservation, warmup memory budgeting and bounded draft token ids. Adds CPU regressions and reproducible local build/validation entrypoints. Pre-installs the pinned FlashInfer source's compiler requirements and disables nested package installation in build hooks to avoid an installer-lock deadlock. This candidate is not built or GPU-validated; no performance improvement is claimed. Original contributor references are retained in `compat/migration.json`.
+Ports missing 0731 correctness fixes onto the pinned V4.1 source: speculative penalties and committed-token accounting, tool argument completion, reasoning-marker fragments, routing-key preservation, warmup memory budgeting and bounded draft token ids. Adds CPU regressions and reproducible local build/validation entrypoints. Pre-installs the pinned FlashInfer source's compiler requirements and disables nested package installation in build hooks to avoid an installer-lock deadlock. Passes the intended Triton unit-test build setting through its supported CMake argument hook, avoiding an unused GoogleTest fetch. This candidate is not built or GPU-validated; no performance improvement is claimed. Original contributor references are retained in `compat/migration.json`.
 
 # Changelog
 

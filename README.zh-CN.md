@@ -52,7 +52,7 @@ bash scripts/build-compat.sh --dry-run
 bash scripts/build-compat.sh
 ```
 
-构建检查工作区干净，先构建锁定依赖栈，再构建服务镜像；执行来源、依赖和 CPU 门禁，不推送镜像、不部署服务。底座重建成本较高，首次构建需要联网下载锁定依赖及子模块。
+构建检查工作区干净，先构建锁定依赖栈，再构建服务镜像；执行来源、依赖和 CPU 门禁，不推送镜像、不部署服务。 默认限制为 4 个编译任务，可通过 `COMPAT_MAX_JOBS` 调整；限制写入临时构建配方，原始锁定配方保持不变。底座重建成本较高，首次构建需要联网下载锁定依赖及子模块。
 
 在独立的四卡 SM120 测试环境准备锁定模型后：
 
@@ -84,3 +84,9 @@ python3 scripts/validate-gpu.py --baseline-url http://127.0.0.1:18000/v1 \
 保留上游签名提交身份、源码树及 `upstream` remote。当前本地 Git 以该提交作为浅历史边界；网络恢复 Git 传输后可用 `git fetch --unshallow upstream` 获取更早历史。完整来源和每个本地补丁的父提交、tree、哈希均记录在锁文件及迁移清单中。
 
 本项目不包含模型权重、生产密钥或对话正文。候选版本不代表已经发布的稳定版本。运行验证摘要见 `compat/validation.json`；本地测试详细结果位于被 Git 忽略的 `artifacts/`。
+
+## 在已有服务的 Linux 主机上构建
+
+`COMPAT_BASE_IMAGE` 可指定提供同一锁定摘要的镜像代理，`COMPAT_BASE_SOURCE` 指定获取基础镜像校验凭据的仓库地址。镜像已离线导入时，设置 `COMPAT_BASE_RECEIPT` 指向 `scripts/verify-base-image.py` 生成的记录；构建会检查清单摘要、平台、配置摘要和实际 RootFS 层，不能只凭相同标签认定镜像一致。
+
+`python3 scripts/run-build-monitored.py` 运行构建并记录日志及退出状态，每分钟检查资源。可用内存低于 96 GiB 或项目所在盘剩余低于 200 GiB 时终止本次构建。该入口不会启动、停止或替换推理服务，也不会下载模型权重。运行记录保存在 `artifacts/remote-build/`。

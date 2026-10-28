@@ -28,12 +28,18 @@ mkdir -p "$recipes"
 # canonical Containerfile.stack used by the content-addressed stack key.
 python3 - "$jobs" "$recipes" "$source_cache" <<'PY'
 from pathlib import Path
+import shlex
 import sys
 jobs, destination, source_cache = sys.argv[1:]
 for name, original in [('Containerfile.stack', '&& bash /opt/dsv41-platform/scripts/build-base.sh'), ('Containerfile', 'RUN bash /opt/dsv41-platform/scripts/build-stack.sh')]:
     source = Path(name).read_text()
     assert source.count(original) == 1, name
     modified = source.replace(original, original.replace('bash ', f'MAX_JOBS={jobs} CARGO_BUILD_JOBS={jobs} bash ', 1))
+    if name == 'Containerfile.stack':
+        # Wheel builders print one line per cubin. Keep diagnostics below
+        # BuildKit's log limit without masking the compiler's exit status.
+        command = "bash /opt/dsv41-platform/scripts/build-base.sh 2>&1 | awk '!/^(copying|adding) .*flashinfer_cubin/ { print; fflush(); }'"
+        modified = modified.replace('bash /opt/dsv41-platform/scripts/build-base.sh', 'bash -o pipefail -c ' + shlex.quote(command), 1)
     if source_cache:
         needle = 'RUN test -n' if name == 'Containerfile.stack' else f'RUN MAX_JOBS={jobs}'
         prefix = 'RUN --mount=type=bind,from=locked_sources,target=/opt/dsv41-platform/git-mirrors . /opt/dsv41-platform/git-mirrors/git-env.sh && '

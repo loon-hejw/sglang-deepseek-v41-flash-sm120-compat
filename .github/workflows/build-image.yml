@@ -7,17 +7,8 @@ on:
         description: Optional full source commit to build
         required: false
         type: string
-  push:
-    branches: [main]
-    # Only changes to image inputs start a build. Validation, documentation,
-    # and workflow changes cannot replace an already-published immutable tag.
-    paths:
-      - Containerfile
-      - Containerfile.stack
-      - release.json
-      - stack.lock.json
-      - patches/**
-      - build/**
+  # Source publication does not build or publish images. Dispatch explicitly
+  # only for a new immutable candidate after completing release qualification.
 
 permissions:
   contents: read

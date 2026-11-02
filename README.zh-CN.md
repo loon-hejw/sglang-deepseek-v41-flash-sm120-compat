@@ -1,28 +1,81 @@
-# DeepSeek V4.1 Flash SM120 兼容修复项目
+# DeepSeek V4.1 Flash SM120 TP4 兼容优化
 
-保留 V4.1 的模型实现、SM120 优化和依赖栈，将 0731 项目中仍适用而缺失的修复迁入当前代码。基线是 ormandj 项目的 `11c525d0234dc25e167e4d6bb0fe9fe757762f5f`，SGLang 固定为 `62cee1b15c22350b17a9256fc6ad5777feb2ec70`。旧补丁来自 ombori 项目的 `79bbc001db042fc85dc2b15e4175210eaec3e78e`。
+基于 [ormandj 的 V4.1 项目](https://github.com/ormandj/sglang-deepseek-v41-flash-sm120)，保留锁定的 SM120 优化和依赖栈，迁入 [0731 项目](https://github.com/ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000) 中适用的正确性修复，提供已经完成四卡部署验收的通用启动配方。
 
-本项目候选镜像名为 `local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.3`。已在 Linux amd64 完成构建，通过镜像内来源、依赖及 CPU 门禁（895 项通过、1 项跳过，包含全部 132 项兼容回归）。尚未发布、部署或进行 GPU 验收，不保证速度或回答质量提升。上游文档中的性能数字仅属于原版镜像。
+**本仓库发布源码、配置与验证摘要，尚未发布可公开拉取的兼容镜像或稳定版 Release。** 本地镜像完整名称为 `local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.3`。原版 `ghcr.io/ormandj/sglang-deepseek-v41-flash-sm120:v0.4.3` 不包含本项目新增的兼容修复。镜像构建输入及已验收版本保持不变。
 
-## 已完成的迁移
+## 修复内容与来源
 
-[迁移清单](compat/migration.json) 对旧项目的 33 个补丁逐项给出源码位置、原始补丁 SHA256、判定及迁入补丁编号：7 项迁移、22 项已有等效实现、4 项不适用于当前 V4.1 配方。原补丁和许可证保存在 `compat/upstream-0731/`，仅作为来源记录，构建不会直接应用它们。
+[迁移清单](compat/migration.json) 对旧项目 33 项补丁逐一给出来源、哈希和处理结果：7 项迁移、22 项已有等效实现、4 项不适用。最终 SGLang 系列共 40 个补丁，包括 7 个新增运行时修复及 1 个 CPU 测试补丁；FlashInfer、DeepGEMM、Triton 的锁定版本保留。
 
-新增 7 个运行时修复补丁及 1 个 CPU 测试补丁，共 40 个 SGLang 补丁；FlashInfer、DeepGEMM、Triton 的锁定版本保持不变。
+- DSPARK/DFLASH 正确应用加性和重复惩罚，并按已提交输出累计 token 历史，覆盖批次复用、过滤与合并。
+- 工具调用结束时补全所有调用的剩余参数，避免重复收尾及最终名称分片造成的参数遗漏。
+- 普通正文暂存跨分片的推理标签，避免标签碎片直接泄漏。
+- 批请求拆分保留 `routing_key`。
+- DeepGEMM 只预热显存预算容纳得下的受支持形状。
+- Markov greedy 合并遇到退化分数时，将无效 sentinel 限制在词表范围内。
+- 修复 FlashInfer 嵌套安装锁等待及 Triton CMake 测试开关传递，保留来源、依赖和 CPU 构建门禁。
 
-- 恢复 DSPARK/DFLASH 的加性惩罚、重复惩罚和两个快速跳过判断。按照真实 logits 的符号执行缩放，覆盖加性惩罚导致符号变化及 grammar/logit bias 组合。
-- 按已经提交到请求历史的输出累计惩罚，处理每轮多个 token、重复准备、批次过滤、合并及重建。不会将尚未提交的草稿 token 纳入计数。
-- 补发所有工具调用尚未发送的参数，记录最终完整名称分片，并避免重复收尾造成重复输出。
-- 普通正文状态暂存跨分片的推理标签，避免标签碎片泄漏。
-- 批请求切片保留 `routing_key`；`require_reasoning` 沿用新版已有实现。
-- DeepGEMM 预热仅选择内存容纳得下的受支持形状，最小形状也放不下时跳过预热。
-- 将退化 Markov greedy 合并结果的 sentinel 限制在词表范围内。
+完整源码版本、补丁哈希及最终源码树由 [锁文件](stack.lock.json) 记录。保留上游历史、作者署名和许可证；旧补丁原文及许可证在 `compat/upstream-0731/`，仅作来源记录。不会恢复旧版 C4 布局、prefix-affinity 新功能，也不套用旧版 DP4、256 并发或 gamma=7 配方。
 
-不恢复旧版的 C4 压缩布局或 prefix-affinity 新特性，不把旧版 256 并发、DP4 或 gamma=7 参数套到新版。V4.1 默认思考模式和启动参数保持上游行为。
+## 构建与启动
 
-## 本地 CPU 检查
+需要 Linux amd64 Docker 主机、四张 96 GB RTX PRO 6000 Blackwell GPU，以及可用的 GPU P2P。已验证主机为双路 Xeon Platinum 8480+、503 GiB 内存、驱动 610.43.02，单卡功率上限 600 W。Engram 表约需 189 GiB 主机内存，此外还需 HiCache、运行时和系统内存。模型约占 480 GiB 磁盘，镜像构建还需额外空间。
 
-需要 Python 3.12、Git、Bash、jq；首次获取源码需要访问 GitHub 官方 API/归档。独立环境示例：
+```bash
+git clone https://github.com/loon-hejw/sglang-deepseek-v41-flash-sm120-compat.git
+cd sglang-deepseek-v41-flash-sm120-compat
+bash scripts/build-compat.sh
+hf download deepseek-ai/DeepSeek-V4.1-Flash-1017 \
+  --revision 1bae0e1088993b9b82de08f59de5be5a34e42170 \
+  --local-dir /srv/models/DeepSeek-V4.1-Flash-1017
+
+export MODEL_DIR=/srv/models/DeepSeek-V4.1-Flash-1017
+export CACHE_DIR=/srv/cache/sglang-deepseek-v41-compat-v0.4.4-rc.3-tp4
+export GPU_DEVICES=0,1,2,3
+# 在当前运行环境中设置 API_KEY 可启用鉴权，不要提交真实密钥。
+bash examples/serve-compat-tp4.sh --dry-run
+bash examples/serve-compat-tp4.sh
+```
+
+构建命令只在本地构建镜像，不启动服务或推送镜像。首次构建需要下载锁定依赖，资源及网络选项见 [构建说明](BUILDING.md)。也可通过 `IMAGE` 指定已经获取的兼容镜像。
+
+启动脚本只向容器暴露指定的四张卡，可用四个索引或完整 GPU UUID。模型只读挂载，缓存持久化；容器后台运行、退出后保留，重启策略为 `no`。`--dry-run` 不创建目录或调用 Docker，输出隐藏 API Key。默认宿主端口 `18001`，模型名 `deepseek-v4.1-flash-1017`，通过 OpenAI `/v1/chat/completions` 调用。容器已存在时不会被覆盖；停止后可用 `docker start deepseek-v41-flash-sm120-compat-tp4` 复用原配置启动。
+
+## 已验证的 TP4 配置
+
+| 项目 | 配置 |
+| --- | --- |
+| 并行 | TP4 / EP2，`moe-a2a-backend=none` |
+| 推测解码 | DSPARK block 5，auto SPS，compact ragged verify，graph tier 对齐 |
+| 上下文 / 并发 | 1,048,576 / 最多 16 路 |
+| KV / 静态显存比例 | `fp8_e4m3` / **0.85** |
+| Prefill | chunk 8192、max prefill tokens 8192 |
+| 后端 | attention `dsv4`、MoE `flashinfer_mxfp4`、FP8 GEMM `flashinfer_cutlass` |
+| 缓存 | HiCache ratio 2，Engram host table 按 rank 分片，encoder/decoder SWA bounded replay |
+| 解析 | reasoning `deepseek-v41`、tool calls `deepseekv41` |
+| 默认采样 | OpenAI 默认值，temperature 1.0、top_p 1.0；客户端显式值优先 |
+
+显式启用 PCIe-IPC all-reduce、SM120 MXFP8 skinny GEMM、BF16 skinny LM head、WO-A FP8 copy；保留重叠调度，编译任务数限制为 4。完整参数及环境变量接口见 [RUN.md](RUN.md)。0.80 在已验证硬件上无法为模型和草稿权重之外的 KV 池留出空间，实际采用并验证了 0.85。
+
+## 验收证据与边界
+
+2026-11-02 验收的是单独构建的 `local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.3`，镜像身份为 `sha256:f124217b8a003822be10c11cb107739e7a2259c29b3b11c0aed18dea58bae356`，构建源码提交为 `d6528a773d1cda402de06844ba5270d94deb0d10`。本地重新构建产生的是另一份产物，需要独立验证，不能只凭同名标签沿用结论。
+
+- 镜像内 CPU：895 项通过、480 个子测试通过、1 项 CUDA 专用测试跳过；132 项兼容回归已包含在 895 项中。
+- 原生 GPU：实际 Triton Markov combine 与 CUDA Graph replay，8 项通过、0 跳过。
+- 模型接口：15 项功能场景通过，包含 SSE、JSON schema、单/双工具调用、思考、图片、采样惩罚以及 1/4/16 并发。
+- 长上下文：实际输入 34,220 prompt tokens，重复前缀命中 34,048 cached tokens。
+- 稳定性：连续 1800.5 秒，61 次健康采样、31 次聊天探针全部成功；0 重启、0 OOM，未发现 CUDA/NCCL 运行错误。
+- SPS：8 个 batch 探针、17 个 verify tiers，拟合 56 个 cell，无失败项；生效 KV 池为 2,772,736 tokens。
+
+以上是功能和稳定性验收，不是吞吐基准、完整采样等价性或回答质量提升证明。尚未完成完整 1M 输入压力、请求取消/SWA 回收专项、关闭 DSPARK 的受控对照和热启动计时。短请求吞吐和上游性能结果不能作为本镜像的通用性能承诺，也没有 TP8 实测结论。详细状态见 [验证记录](compat/validation.json)。
+
+独立空缓存首次启动耗时 2343 秒，包含内核编译、CUDA Graph 捕获和 SPS 调优。同镜像、硬件和参数可复用兼容编译缓存与 SPS 表，但仍需加载权重及捕获 CUDA Graph。换主机可尝试迁移兼容编译缓存，SPS 应按新机器重测；具体热启动耗时尚未测量。
+
+## 开发验证
+
+本地 CPU 检查使用 Python 3.12；准备环境后执行：
 
 ```bash
 uv venv --python 3.12 .venv
@@ -30,69 +83,11 @@ uv pip install --python .venv/bin/python -r compat/requirements-cpu.txt
 export COMPAT_PYTHON="$PWD/.venv/bin/python"
 bash scripts/test-compat.sh
 .venv/bin/python scripts/check-migration.py --source .cache/compat-sources/sglang
+python3 scripts/test_serve_compat_tp4.py
 bash scripts/validate-release.sh
 bash scripts/validate-docs.sh
-COMPAT_SOURCE_FETCH=archive bash scripts/verify-patches.sh
 ```
 
-测试读取锁定源码的实际函数和类，只隔离 GPU 导入依赖与传输对象，去除 `torch.compile` 包装；不复制一份业务实现作为被测对象。普通采样参照方法也来自同一源码。Triton 合并器的 CPU 测试执行其函数体的张量模拟，不能替代 CUDA 编译和 Graph replay 验证。
+CPU 测试隔离加载锁定源码的真实函数体，Triton 使用张量模拟，不替代原生 CUDA 测试。API 对比入口 `scripts/validate-gpu.py` 需要两端同权重、GPU 配额和请求配置，先用 `--dry-run` 预览。原生 GPU 入口为 `compat/test_gpu_native.py`。完整来源验证和发布规则见 [BUILDING.md](BUILDING.md)。
 
-本地 CPU 环境使用 PyTorch 2.10.0；生产构建使用锁定底座的 PyTorch，镜像构建会再次运行该套测试及上游 CPU 检查。两者的执行记录必须分别标注。
-
-本次 CPU 回归为 132 项通过；同套测试在原版上为 77 项通过、55 项失败，其中包含参数组合及新增辅助方法缺失，不代表 55 个独立缺陷。四个框架及其递归子模块、补丁哈希和最终源码树已在镜像构建中核验。基础镜像通过镜像代理拉取，并独立验证原始清单摘要、配置摘要及实际 RootFS 层。完整结果见 [验证记录](compat/validation.json)。
-
-`verify-source-archives.py` 验证官方归档的 Git tree、全部补丁哈希和最终 tree。对于子模块，它验证父树中的 gitlink，不下载子模块工作树；实际镜像构建继续使用上游递归 checkout。不能把源码树检查写成镜像构建成功。
-
-## 构建和隔离启动
-
-在具有足够内存和磁盘的 Linux amd64 Docker 构建机上运行：
-
-```bash
-bash scripts/build-compat.sh --dry-run
-bash scripts/build-compat.sh
-```
-
-构建检查工作区干净，先构建锁定依赖栈，再构建服务镜像；执行来源、依赖和 CPU 门禁，不推送镜像、不部署服务。 默认限制为 4 个编译任务，可通过 `COMPAT_MAX_JOBS` 调整；限制写入临时构建配方，原始锁定配方保持不变。底座重建成本较高，首次构建需要联网下载锁定依赖及子模块。
-
-在独立的四卡 SM120 测试环境准备锁定模型后：
-
-```bash
-export MODEL_DIR=/srv/models/DeepSeek-V4.1-Flash-1017
-export CACHE_DIR=/srv/cache/sglang-deepseek-v41-compat-v0.4.4-rc.3-tp4
-bash examples/serve-compat-tp4.sh
-```
-
-此启动命令会启动 GPU 服务，仅在测试资源就绪后手动执行。默认端口为 `18001`、容器名为 `deepseek-v41-flash-sm120-compat-tp4`，可用 `PORT` 和 `CONTAINER_NAME` 覆盖。使用独立的缓存、端口和容器名称；本次交付未执行启动命令。
-
-## GPU 验证入口
-
-`scripts/validate-gpu.py` 接收明确指定的两个 OpenAI 测试端点，检查流结束、工具参数、结构化 JSON、Markdown 基本结构、思考、惩罚、最小生成长度与 logprobs，并保存每条延迟、token 数和结果摘要。默认并发为 1、4、16，每组 3 次；先用 `--dry-run` 查看请求数量。密钥仅从 `V41_BASELINE_API_KEY`、`V41_CANDIDATE_API_KEY` 环境变量读取，不写入结果。
-
-```bash
-python3 scripts/validate-gpu.py --baseline-url http://127.0.0.1:18000/v1 \
-  --candidate-url http://127.0.0.1:18001/v1 --dry-run
-```
-
-去掉 `--dry-run` 才发送请求。两个端点必须使用同一权重、GPU 配额、请求参数和启动配置；额外以关闭 DSPARK 的独立实例作参照。脚本不启动、不停止服务。合成协议检查不能替代原始格式异常案例的人工判读。
-
-`compat/test_gpu_native.py` 在构建镜像内通过 pytest 手动运行，检查实际 Triton 合并内核和 CUDA Graph replay。发布前还需覆盖填充批次、长上下文、缓存命中、请求取消、SWA 回收及真实并发；这部分尚未执行。
-
-惩罚状态的 CPU 测试只证明已提交请求历史的累计行为。重叠调度下历史可见时机，以及一个 verify block 内各 token 的惩罚语义，仍需与关闭 DSPARK 的实例实测对比，不能由本地测试推断为完整采样等价。
-
-## 来源和版本
-
-保留上游签名提交身份、源码树及 `upstream` remote。当前本地 Git 以该提交作为浅历史边界；网络恢复 Git 传输后可用 `git fetch --unshallow upstream` 获取更早历史。完整来源和每个本地补丁的父提交、tree、哈希均记录在锁文件及迁移清单中。
-
-本项目不包含模型权重、生产密钥或对话正文。候选版本不代表已经发布的稳定版本。运行验证摘要见 `compat/validation.json`；本地测试详细结果位于被 Git 忽略的 `artifacts/`。
-
-## 在已有服务的 Linux 主机上构建
-
-`COMPAT_BASE_IMAGE` 可指定提供同一锁定摘要的镜像代理，`COMPAT_BASE_SOURCE` 指定获取基础镜像校验凭据的仓库地址。镜像已离线导入时，设置 `COMPAT_BASE_RECEIPT` 指向 `scripts/verify-base-image.py` 生成的记录；构建会检查清单摘要、平台、配置摘要和实际 RootFS 层，不能只凭相同标签认定镜像一致。
-
-`python3 scripts/run-build-monitored.py` 运行构建并记录日志及退出状态，每分钟检查资源。可用内存低于 96 GiB 或项目所在盘剩余低于 200 GiB 时终止本次构建。该入口不会启动、停止或替换推理服务，也不会下载模型权重。运行记录保存在 `artifacts/remote-build/`。
-
-当已有同版本镜像保留官方 Git 对象时，可将核验过的仓库与递归子模块整理成独立缓存，通过 `COMPAT_SOURCE_CACHE` 供构建使用。缓存只在编译步骤只读挂载，Git 仍按锁定提交检出，原有补丁及源码树校验继续执行；运行镜像不携带这份中转缓存。
-
-构建会先安装锁定 FlashInfer 源码声明的 CUDA 编译工具依赖，再设置 `FLASHINFER_BUILD_NO_PIP=1`，避免其元数据钩子在外层 `uv` 持有环境锁时再次执行安装。NCCL、NIXL 和 CUDA 运行时继续由原有锁定底座及依赖检查约束。
-
-Triton 的测试构建开关通过 `TRITON_APPEND_CMAKE_ARGS="-DTRITON_BUILD_UT=OFF"` 显式传入 CMake；锁定版本的 `setup.py` 不转发同名环境变量。此设置与原配方关闭 Triton 自身测试构建的意图一致，镜像内 SGLang 和兼容回归门禁仍完整运行。
+公开仓库不包含模型权重、内部部署地址、生产凭据或对话正文。原始日志保留在本地，公开验证摘要只记录硬件、参数、版本与检查结果。原版稳定版历史见 [CHANGELOG.md](CHANGELOG.md)，本项目源码使用 [Apache-2.0](LICENSE)，第三方归属见 [NOTICE.md](NOTICE.md)。

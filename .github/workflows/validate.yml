@@ -28,6 +28,8 @@ jobs:
         run: bash -n scripts/*.sh build/*.sh examples/*.sh
       - name: Check JSON syntax
         run: jq -e . release.json stack.lock.json >/dev/null
+      - name: Verify TP4 launcher without Docker
+        run: python3 scripts/test_serve_compat_tp4.py
       - name: Test release publication tooling
         run: |
           python3 scripts/test_validate_publish_release.py

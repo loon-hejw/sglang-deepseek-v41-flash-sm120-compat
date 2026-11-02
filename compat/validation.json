@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "recorded_at_utc": "2026-10-28T02:49:43.792680+00:00",
+  "recorded_at_utc": "2026-11-02T08:46:48.362199+00:00",
   "candidate": "v0.4.4-rc.3",
   "baseline_project_commit": "11c525d0234dc25e167e4d6bb0fe9fe757762f5f",
   "platform": {
@@ -144,17 +144,59 @@
       "counting_note": "JUnit counts include 480 passing subtests: 895 passing pytest cases + 480 passing subtests + 1 CUDA skip = 1376 entries. All 132 compatibility cases are included in the 895 passing pytest cases."
     },
     "native_cuda_triton_cuda_graph": {
-      "status": "not_run"
+      "status": "passed",
+      "recorded_at_utc": "2026-11-02T07:26:26.527815+00:00",
+      "passed": 8,
+      "skipped": 0,
+      "test_entrypoint": "compat/test_gpu_native.py",
+      "scope": "Native Triton Markov greedy combine and CUDA Graph replay, batch sizes 1/3/8/16, normal and NaN sentinel cases."
     },
     "model_inference_quality_and_performance": {
-      "status": "not_run"
+      "status": "functional_acceptance_passed_performance_and_quality_comparison_not_run",
+      "functional_scenarios_passed": 15,
+      "cases": [
+        "health_models_auth",
+        "nonstream_chat",
+        "markdown",
+        "json_schema",
+        "tool",
+        "penalties",
+        "min_tokens_logprobs",
+        "thinking",
+        "two_tools",
+        "synthetic_image",
+        "long_context",
+        "repeated_prefix",
+        "concurrency_1",
+        "concurrency_4",
+        "concurrency_16"
+      ],
+      "concurrency": [
+        1,
+        4,
+        16
+      ],
+      "repetitions_per_concurrency": 1,
+      "long_input_prompt_tokens": 34220,
+      "repeated_prefix_cached_tokens": 34048,
+      "note": "Functional scenarios and short concurrent requests; not a throughput benchmark, quality comparison or proof of complete sampling equivalence. No production prompts or responses are published."
     },
     "deployment": {
-      "status": "unchanged",
-      "container_id_start_time_restart_count_ports_unchanged": true,
+      "status": "acceptance_passed",
+      "recorded_at_utc": "2026-11-02T08:46:48.362199+00:00",
       "health_http_status": 200,
-      "before": "artifacts/remote-build/service-before.json",
-      "after": "artifacts/remote-build/service-after.json"
+      "configuration": "examples/serve-compat-tp4.sh",
+      "observation_seconds": 1800.5054381834343,
+      "health_samples_passed": 61,
+      "chat_probes_passed": 31,
+      "container_restarts": 0,
+      "oom_kills": 0,
+      "detected_cuda_nccl_runtime_errors": 0,
+      "patches_verified": 40,
+      "selected_gpu_count": 4,
+      "first_empty_cache_start_seconds": 2343.0,
+      "warm_restart_measured": false,
+      "note": "Existing image deployed and qualified. Source publication does not rebuild the image or change the running service. Public launcher has configurable paths, devices, endpoint and credentials; engine parameters match the qualified deployment."
     },
     "base_image_identity": {
       "status": "passed",
@@ -195,12 +237,50 @@
       "memory_limit_gib": 96,
       "disk_limit_gib": 200,
       "record": "artifacts/remote-build/resources.jsonl"
+    },
+    "sps_autotune": {
+      "status": "passed",
+      "batch_probes": [
+        1,
+        2,
+        3,
+        4,
+        6,
+        8,
+        12,
+        16
+      ],
+      "verify_tiers": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        12,
+        18,
+        24,
+        30,
+        36,
+        42,
+        48,
+        60,
+        72,
+        84,
+        96
+      ],
+      "fitted_cells": 56,
+      "failed_cells": 0,
+      "table_sha256": "84bd08990cb63ccbe04e004862ca9e8940e796839182226b0b658c47cedf07f5",
+      "note": "Table measured for the qualified host and configuration; re-profile on another host. The machine-specific table is not distributed."
     }
   },
   "remaining_validation": [
-    "Run native CUDA/Triton/Graph tests and controlled API comparisons on isolated SM120 GPUs.",
-    "Verify overlap history visibility and within-verify-block penalty behavior against a DSPARK-disabled control; CPU committed-history checks alone do not establish end-to-end sampling equivalence.",
-    "Exercise long context, padded batches, cache reuse, cancellation, SWA eviction and real workload format cases."
+    "Controlled quality and throughput comparisons using identical workloads, repetitions and output-token accounting including reasoning.",
+    "Compare overlap-history visibility and within-verify-block penalty behavior against a DSPARK-disabled control; CPU and functional probes do not establish complete sampling equivalence.",
+    "Full 1M-input stress, cancellation, targeted SWA eviction/recovery, padded-batch edge cases and reported real-workload format failures.",
+    "Timed warm restarts and compilation-cache portability on another host.",
+    "TP8 and dual-TP4 capacity/performance comparisons."
   ],
   "build_platform": {
     "system": "Linux",
@@ -209,5 +289,71 @@
     "torch": "2.14.1+cu130",
     "device": "cpu",
     "max_jobs": 4
+  },
+  "serving_qualification": {
+    "date": "2026-11-02",
+    "artifact": "local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.3",
+    "image_identity": "sha256:f124217b8a003822be10c11cb107739e7a2259c29b3b11c0aed18dea58bae356",
+    "source_revision": "d6528a773d1cda402de06844ba5270d94deb0d10",
+    "hardware": {
+      "gpu": "NVIDIA RTX PRO 6000 Blackwell Server Edition",
+      "gpu_count": 4,
+      "gpu_memory_mib_each": 97887,
+      "gpu_power_limit_watts_each": 600,
+      "driver": "610.43.02",
+      "cpu": "2 x Intel Xeon Platinum 8480+",
+      "logical_cpus": 224,
+      "host_ram_gib": 503,
+      "interconnect": "PCIe P2P, no NVLink"
+    },
+    "parameters": {
+      "tp_size": 4,
+      "ep_size": 2,
+      "mem_fraction_static": 0.85,
+      "context_length": 1048576,
+      "max_running_requests": 16,
+      "speculative_algorithm": "DSPARK",
+      "speculative_dspark_block_size": 5,
+      "speculative_num_draft_tokens": 6,
+      "sps_autotune": "auto",
+      "hicache_ratio": 2,
+      "chunked_prefill_size": 8192,
+      "max_prefill_tokens": 8192,
+      "kv_cache_dtype": "fp8_e4m3",
+      "attention_backend": "dsv4",
+      "moe_runner_backend": "flashinfer_mxfp4",
+      "fp8_gemm_backend": "flashinfer_cutlass",
+      "reasoning_parser": "deepseek-v41",
+      "tool_call_parser": "deepseekv41",
+      "sampling_defaults": "openai"
+    },
+    "effective_kv_pool_tokens": 2772736,
+    "max_req_input_len": 1048570,
+    "evidence_policy": "Sanitized summaries of privately retained deployment evidence. No raw service logs, private host identifiers or credentials are published."
+  },
+  "source_publication_checks": {
+    "recorded_at_utc": "2026-11-02T09:28:10.318892+00:00",
+    "python": "3.12.16",
+    "platform": "Darwin/arm64",
+    "compat_cpu_cases_passed": 132,
+    "launcher_tests_passed": 6,
+    "publication_tool_tests_passed": 7,
+    "release_target_tests_passed": 8,
+    "migration_entries_checked": 33,
+    "release_contract": "passed",
+    "documentation_contract": "passed",
+    "engine_profile_comparison": {
+      "status": "passed",
+      "engine_flags": 36,
+      "runtime_environment_values_checked": 22,
+      "excluded_fields": [
+        "API key",
+        "model filesystem path"
+      ],
+      "method": "Capture the launcher argv using a mock Docker executable and compare the engine options to the qualified deployment."
+    },
+    "image_inputs_changed": false,
+    "new_gpu_requests_sent": 0,
+    "note": "Source publication checks reuse the locked CPU source harness. Previously recorded native GPU and serving qualification refer to the existing artifact, not to a newly built image."
   }
 }

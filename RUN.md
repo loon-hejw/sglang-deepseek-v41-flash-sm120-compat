@@ -1,46 +1,63 @@
-# Running DeepSeek-V4.1-Flash
+# Running the validated compatibility TP4 profile
 
-Download the checkpoint using [README.md](README.md), then start the TP4 launcher with the published image `ghcr.io/ormandj/sglang-deepseek-v41-flash-sm120:v0.4.3`:
+Use `deepseek-ai/DeepSeek-V4.1-Flash-1017` at revision `1bae0e1088993b9b82de08f59de5be5a34e42170`. Build `local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.3` as described in [BUILDING.md](BUILDING.md); this repository does not publish a pullable fork image yet.
+
+## Launch and lifecycle
 
 ```bash
 export MODEL_DIR=/srv/models/DeepSeek-V4.1-Flash-1017
-export IMAGE=ghcr.io/ormandj/sglang-deepseek-v41-flash-sm120:v0.4.3
-export CACHE_DIR=/srv/cache/sglang-deepseek-v41-flash-sm120-v1-tp4
-./examples/serve-deepseek-v41-flash-tp4.sh
+export CACHE_DIR=/srv/cache/sglang-deepseek-v41-compat-v0.4.4-rc.3-tp4
+export GPU_DEVICES=0,1,2,3
+export IMAGE=local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.3
+# Supply API_KEY in your environment if authentication is required.
+bash examples/serve-compat-tp4.sh --dry-run
+bash examples/serve-compat-tp4.sh
 ```
 
-Use `deepseek-ai/DeepSeek-V4.1-Flash-1017` at revision `1bae0e1088993b9b82de08f59de5be5a34e42170`. Use a fresh cache directory for each image version; the directory holds compiled kernels and the measured speculative-decoding cost table.
+`GPU_DEVICES` selects exactly four distinct indices or full GPU UUIDs through Docker's device request. CUDA sees the selected devices as indices 0–3. The launcher never requests all host GPUs. The dry run needs an existing model directory containing `config.json`, but creates no cache directory and invokes no Docker command. Its printed command masks the API key.
 
-## Profile
-
-- Tensor parallelism 4 with expert parallelism 2 (`--ep-size 2`) over PCIe, FlashInfer PCIe-IPC all-reduce for decode-sized reductions, NCCL for the rest. `NCCL_P2P_LEVEL=SYS` permits peer access across CPU roots; verify P2P on your platform before keeping that setting.
-- FP8 E4M3 KV cache, a 1,048,576-token per-request limit, 16 running requests and 8,192-token prefill chunks. The device KV pool is shared across requests.
-- Engram conditional-memory tables in host RAM, one row shard per rank (`SGLANG_ENABLE_DSV41_ENGRAM_HOST_TABLE=1`, `SGLANG_DSV41_ENGRAM_HOST_TABLE_LAYOUT=per_rank`), about 189 GiB in total. The InstantTensor loader (`--load-format instanttensor`) loads the checkpoint.
-- Decoder and encoder SWA bounded replay. Together with HiCache they let an evicted prefix be restored from host RAM instead of recomputed. HiCache is on with a host tier twice the device pool (`HICACHE_RATIO=2`); set `ENABLE_HICACHE=0` to disable it.
-- DSpark speculative decoding with block size 5. At startup, `--speculative-dspark-sps-autotune auto` measures the verify-cost table on this machine and caches it in `CACHE_DIR`; `SGLANG_DSPARK_SPS_AUTOTUNE_TOP_P=1.0` matches the recommended sampling. Compact ragged verify (`SGLANG_RAGGED_VERIFY_MODE=compact`) with sub-width tiers, and a single request's verify budget sized from a running average of its acceptance (`SGLANG_DSPARK_BUDGET_SURVIVAL_EMA=0.15`).
-- Image input, up to 128 images per request.
-- `SGLANG_MAX_NEW_TOKENS_LIMIT=393216` caps a request that does not set `max_tokens`.
-
-## Clients
-
-The model is served as `deepseek-v4.1-flash` through the OpenAI chat-completions API, with reasoning and tool-call parsing. The DeepSeek-V4.1-Flash-1017 model card recommends `temperature=1.0` and `top_p=1.0`. Reasoning shares the `max_tokens` budget: leave enough room for it, or a small budget can end before any answer text. Set `API_KEY` before starting the launcher to require `Authorization: Bearer <key>`.
-
-## Build from source
+The container is detached, keeps its name after exit, and uses restart policy `no`. Follow startup logs and wait for readiness:
 
 ```bash
-./scripts/validate-release.sh
-./scripts/validate-docs.sh
-./scripts/verify-patches.sh
-read -r stack_key flashinfer_key < <(bash build/stack-key.sh .)
-docker build -f Containerfile.stack --target stack \
-  --build-arg FLASHINFER_KEY="$flashinfer_key" \
-  -t "sglang-deepseek-v41-flash-sm120-stack:stack-$stack_key" .
-docker build -f Containerfile --target runtime \
-  --build-arg STACK_IMAGE="sglang-deepseek-v41-flash-sm120-stack:stack-$stack_key" \
-  --build-arg IMAGE_SOURCE=https://github.com/ormandj/sglang-deepseek-v41-flash-sm120 \
-  --build-arg IMAGE_SOURCE_REVISION="$(git rev-parse HEAD)" \
-  -t sglang-deepseek-v41-flash-sm120:v0.3.0-rc.1 .
-rm -f stack.json
+docker logs --follow deepseek-v41-flash-sm120-compat-tp4
+curl --fail http://127.0.0.1:18001/health
+# In a shell with API_KEY set (omit the header for an unauthenticated instance):
+curl --fail -H "Authorization: Bearer ${API_KEY}" http://127.0.0.1:18001/v1/models
 ```
 
-`build/stack-key.sh` writes `stack.json`, the stack image's inputs, and prints the stack and FlashInfer keys. The stack image (FlashInfer, DeepGEMM, Triton) only changes when those inputs do, so later candidates can reuse it. The build scripts use twelve compiler jobs; on a builder with less memory, prefix `MAX_JOBS=3` to the build-script commands in copies of the two Containerfiles, as the CI workflow does, and keep the tracked `Containerfile.stack` in the build context, because the image hashes it. [BUILDING.md](BUILDING.md) describes the CI workflows and the steps that publish a Release.
+Restart a stopped container with its saved configuration using `docker start deepseek-v41-flash-sm120-compat-tp4`. Stop it with `docker stop --time 120 deepseek-v41-flash-sm120-compat-tp4`. Running the launcher again does not replace a container with the same name; choose a different `CONTAINER_NAME` for a separate instance, with separate GPUs, port and cache. A configuration change requires creating a new container after freeing its selected devices. The image and cache are not deleted when a container stops.
+
+## Settings
+
+| Environment variable | Default / behavior |
+| --- | --- |
+| `MODEL_DIR` | Required, checkpoint directory; mounted read-only |
+| `CACHE_DIR` | Required, version-specific persistent directory mounted at `/root/.cache` |
+| `IMAGE` | `local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.3` |
+| `GPU_DEVICES` | `0,1,2,3`; exactly four GPU indices or full GPU UUIDs |
+| `PORT` | `18001`, mapped to container port 8000 |
+| `CONTAINER_NAME` | `deepseek-v41-flash-sm120-compat-tp4` |
+| `SERVED_MODEL_NAME` | `deepseek-v4.1-flash-1017` |
+| `API_KEY` | Optional bearer token, supplied at runtime |
+| `CONTEXT_LENGTH` | `1048576`, maximum per-request context |
+| `MAX_RUNNING_REQUESTS` | `16`, supported range 1–16 |
+| `MEM_FRACTION` | `0.85`, validated on the stated hardware |
+| `MAX_NEW_TOKENS_LIMIT` | `393216`, cap when a client omits `max_tokens` |
+| `ENABLE_HICACHE` / `HICACHE_RATIO` | `1` / `2`; use `ENABLE_HICACHE=0` to disable the host cache |
+| `NCCL_P2P_LEVEL` | `SYS`; requires working peer access on the selected GPUs |
+
+The fixed profile is TP4/EP2 with `moe-a2a-backend=none`. It uses FP8 E4M3 KV, `dsv4` attention, FlashInfer MXFP4 MoE and CUTLASS FP8 GEMM; prefill chunk and token limits are both 8192. Decoder CUDA Graphs cover up to 16 requests. Encoder/decoder SWA bounded replay, HiCache, metrics and cache reporting are enabled.
+
+DSPARK uses block size 5, automatic SPS profiling, compact ragged verification, sub-width tiers, graph-tier alignment and survival EMA 0.15. SPS sampling uses temperature/top_p 1.0. SM120 MXFP8 skinny GEMM, BF16 skinny LM head, WO-A FP8 copy and PCIe-IPC all-reduce are explicit. Engram host tables are sharded per rank, taking about 189 GiB of host memory in total. Compilation is limited to four jobs and caches use persistent TorchInductor, Triton and TileLang paths.
+
+The static memory fraction 0.80 failed to leave a KV pool after loading this model and its draft weights on the qualified four-card host; 0.85 passed. Do not interpret the static fraction as a cap on every CUDA allocation or assume a smaller number is always viable. Plan host memory for Engram, HiCache, runtime and other services; two model replicas duplicate the Engram allocation.
+
+## API and cache behavior
+
+Use the OpenAI-compatible `/v1/chat/completions` endpoint. Defaults are `sampling-defaults=openai`, temperature 1.0 and top_p 1.0; explicit request values take precedence. The reasoning parser is `deepseek-v41` and the tool parser is `deepseekv41`. Reasoning counts against `max_tokens`; allocate enough output budget for the final answer. Image input supports at most 128 images per request.
+
+The 1M limit is per request; all requests share the device KV pool. Validation used 34,220 prompt tokens, not a full 1M-input stress test. Short 1/4/16-concurrency probes verify operation and are not a capacity benchmark. See the [validation record](compat/validation.json) for the measured artifact and remaining checks.
+
+The empty-cache first start took 2343 seconds on the qualified host, including compilation, CUDA Graph capture and automatic SPS profiling. Later starts can reuse compatible compilation artifacts and SPS tables, but still load weights and capture process-local CUDA Graphs. No timed warm-restart measurement has been made. Preserve the cache bind mount; a different image, GPU architecture or key configuration may invalidate entries. On a new host, measure SPS again rather than assuming identical GPU models imply identical communication costs.
+
+`examples/serve-deepseek-v41-flash-tp4.sh` is retained as the upstream baseline recipe and defaults to `ghcr.io/ormandj/sglang-deepseek-v41-flash-sm120:v0.4.3`. Use the compatibility launcher above for this fork.

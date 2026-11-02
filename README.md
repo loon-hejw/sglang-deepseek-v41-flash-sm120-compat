@@ -1,53 +1,57 @@
-# SGLang for DeepSeek-V4.1-Flash on SM120
+# DeepSeek-V4.1-Flash TP4 on SM120
 
-**Local compatibility fork.** Start with [中文使用说明](README.zh-CN.md). The local candidate is `local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.3`; it has been built on Linux amd64 and passed its installed-source, dependency and CPU gates (895 passed, 1 skipped, including all 132 compatibility cases). It has not been published, deployed or GPU-validated. Use `examples/serve-compat-tp4.sh` for the fork. Published images and measurements below describe the upstream baseline only. See [migration accounting](compat/migration.json) and [validation status](compat/validation.json).
+A compatibility fork of [ormandj/sglang-deepseek-v41-flash-sm120](https://github.com/ormandj/sglang-deepseek-v41-flash-sm120), with applicable correctness fixes from the [0731 project](https://github.com/ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000) and a validated four-GPU serving profile. [中文说明](README.zh-CN.md) · [Run guide](RUN.md) · [Validation record](compat/validation.json).
 
+This repository publishes source, configuration and validation summaries. **It does not currently publish a downloadable container image or a stable fork release.** Build the local candidate `local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.3`, or set `IMAGE` to a compatible image you have already obtained. The upstream stable image `ghcr.io/ormandj/sglang-deepseek-v41-flash-sm120:v0.4.3` does not include this fork's compatibility fixes.
 
-An SGLang image, built from pinned sources, for [`deepseek-ai/DeepSeek-V4.1-Flash-1017`](https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash-1017) on four RTX PRO 6000 Blackwell (SM120) GPUs over PCIe: tensor parallelism 4 with expert parallelism 2, FP8 KV cache, DSpark speculative decoding, a 1,048,576-token context, image input and a host-RAM prefix cache.
-
-The current published stable image is `v0.4.3`.
-
-| | |
-|---|---|
-| Image | `ghcr.io/ormandj/sglang-deepseek-v41-flash-sm120:v0.4.3` |
+| Item | Profile |
+| --- | --- |
 | Model | `deepseek-ai/DeepSeek-V4.1-Flash-1017` at revision `1bae0e1088993b9b82de08f59de5be5a34e42170` |
-| GPUs | four 96 GB RTX PRO 6000 Blackwell (SM120) with working PCIe peer-to-peer; no NVLink needed |
-| Host RAM | about 250 GiB in use while serving (189 GiB of Engram tables plus the HiCache host tier); 384 GB or more recommended |
-| Disk | about 480 GiB for the checkpoint, plus a persistent kernel cache |
+| Hardware | Four 96 GB RTX PRO 6000 Blackwell GPUs (SM120), working PCIe P2P, Linux amd64 |
+| Parallelism | TP4 / EP2; no MoE all-to-all backend |
+| Speculation | DSPARK block 5, automatic SPS profiling, compact ragged verification |
+| Context / concurrency | 1,048,576 tokens per request / at most 16 running requests |
+| KV / static memory fraction | FP8 E4M3 / 0.85 |
+| Host memory | Engram tables use about 189 GiB plus HiCache and runtime allocations; the qualified host has 503 GiB RAM |
+| Storage | About 480 GiB for the checkpoint, additional image/build space, and a persistent compilation cache |
+| API | OpenAI chat completions; default model `deepseek-v4.1-flash-1017`, host port `18001` |
 
 ## Quick start
 
-Download the checkpoint at the pinned revision:
+Build on a Linux amd64 Docker host with adequate RAM and disk space; [BUILDING.md](BUILDING.md) explains the build requirements and source checks. This step does not start an inference service or publish an image.
 
 ```bash
+git clone https://github.com/loon-hejw/sglang-deepseek-v41-flash-sm120-compat.git
+cd sglang-deepseek-v41-flash-sm120-compat
+bash scripts/build-compat.sh
 hf download deepseek-ai/DeepSeek-V4.1-Flash-1017 \
   --revision 1bae0e1088993b9b82de08f59de5be5a34e42170 \
   --local-dir /srv/models/DeepSeek-V4.1-Flash-1017
-```
 
-Start the server with the TP4 launcher:
-
-```bash
 export MODEL_DIR=/srv/models/DeepSeek-V4.1-Flash-1017
-export CACHE_DIR=/srv/cache/sglang-deepseek-v41-flash-sm120-v1-tp4
-./examples/serve-deepseek-v41-flash-tp4.sh
+export CACHE_DIR=/srv/cache/sglang-deepseek-v41-compat-v0.4.4-rc.3-tp4
+export GPU_DEVICES=0,1,2,3
+# Set API_KEY in your environment to require bearer authentication.
+bash examples/serve-compat-tp4.sh --dry-run
+bash examples/serve-compat-tp4.sh
 ```
 
-The first start compiles kernels and measures the speculative-decoding cost table into `CACHE_DIR`; later starts reuse it. Wait for `The server is fired up and ready to roll!`. The server speaks the OpenAI chat-completions API on port 8000 as `deepseek-v4.1-flash`. Set `API_KEY` to require a bearer token. [RUN.md](RUN.md) covers the settings, client parameters and limits.
+The launcher selects only the four requested devices, mounts the model read-only and persists caches. It starts a detached container with restart policy `no` and retains it after exit. The dry run does not create directories or start Docker and redacts the API key. See [RUN.md](RUN.md) for health checks, lifecycle commands and configurable settings.
 
-## Measured
+## Qualified behavior
 
-Validation runs on four RTX PRO 6000 Blackwell Max-Q GPUs at 250 W each, with the privately built 0.4.2 image (0.4.3 changes only the startup warmup), at the model card's sampling (temperature 1.0, `top_p` 1.0), three repetitions per cell:
+The privately built `local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.3` artifact was qualified on 2026-11-02 with four RTX PRO 6000 Blackwell Server Edition GPUs, driver 610.43.02, 600 W power limits, dual Xeon Platinum 8480+ CPUs and 503 GiB host RAM. Its recorded image identity is `sha256:f124217b8a003822be10c11cb107739e7a2259c29b3b11c0aed18dea58bae356`, built from source commit `d6528a773d1cda402de06844ba5270d94deb0d10`. A new local build is a separate artifact and needs its own qualification.
 
-| Concurrency | C1 | C2 | C4 | C8 | C16 |
-|---|---|---|---|---|---|
-| Decode output tok/s | 202 | 322 | 497 | 674 | 1,051 |
+- Installed-image CPU gates: 895 passing cases and 480 passing subtests, one CUDA-only skip; the 132 compatibility cases are included in the 895.
+- Native GPU: 8 Triton Markov combine and CUDA Graph replay cases passed, zero skips.
+- Serving: 15 functional scenarios passed, including SSE, JSON schema, single/multiple tool calls, reasoning, image input, sampling penalties and 1/4/16 concurrent requests.
+- Long input: 34,220 prompt tokens answered correctly; repeating the prefix reported 34,048 cached tokens.
+- Stability: 1,800.5 seconds, 61 successful health samples and 31 successful chat probes; zero container restarts, OOM kills or detected CUDA/NCCL runtime errors.
+- Automatic SPS: 8 batch probes, 17 verify tiers and 56 fitted cells; no failed cells. The effective KV pool was 2,772,736 tokens.
 
-- Cold prefill: about 14.1K, 14.9K and 14.7K prompt tok/s at 8K, 32K and 128K tokens.
-- Device KV pool: 2,931,712 tokens across requests; one request may use up to 1,048,576.
-- The DeepSeek-V4.1-Flash-1017 model writes shorter answers than the earlier V4.1-Flash checkpoint, so answers finish sooner than its output rate alone suggests.
+These are functional and stability results, **not a throughput benchmark or proof of complete sampling equivalence**. Full 1M-input stress, cancellation/SWA-eviction coverage, controlled DSPARK-disabled comparisons and timed warm restarts remain separate work. No TP8 performance claim is made. The [validation record](compat/validation.json) separates CPU, native CUDA, image build, serving and outstanding checks. Upstream performance history remains attributed to upstream in [CHANGELOG.md](CHANGELOG.md).
 
-These are controlled measurements and do not necessarily represent real-world performance. Output rates include reasoning tokens and depend on speculative acceptance. Details and the benchmark scope are in [CHANGELOG.md](CHANGELOG.md).
+The first empty-cache start took 2,343 seconds, including compilation, CUDA Graph capture and SPS profiling. Compatible kernel caches and SPS tables survive container restarts; weights and CUDA Graphs still need initialization. Changing hardware or configuration can require new compilation/profiling. Use a version-specific cache and re-profile SPS on a new host.
 
 ## Source and patches
 
@@ -89,7 +93,6 @@ SGLang series, applied in order to the pinned SGLang commit:
 | 30 | `30-openai-abort-finish-reason.patch` | [sgl-project/sglang#45132](https://github.com/sgl-project/sglang/pull/45132) | Aborted requests are reported as an error or a stop, never `finish_reason: "abort"` |
 | 31 | `31-openai-stream-exception-frame.patch` | [sgl-project/sglang#45133](https://github.com/sgl-project/sglang/pull/45133) | Failed chat and completion streams end with an error frame and `[DONE]` |
 | 32 | `32-dsv41-effort-minimal-medium.patch` | [sgl-project/sglang#45134](https://github.com/sgl-project/sglang/pull/45134) | DeepSeek-V4.1 supports `reasoning_effort` `minimal` and `medium` |
-
 | 33 | `33-compat-verify-penalties.patch` | Local compatibility port; see [migration audit](compat/migration.json) | Restore additive and repetition penalties across DFLASH/DSPARK verify and skip gates |
 | 34 | `34-compat-committed-penalty-state.patch` | Local compatibility port; see [migration audit](compat/migration.json) | Track all committed speculative output tokens exactly once across batch reuse/filter/merge |
 | 35 | `35-compat-tool-final-flush.patch` | Local compatibility port; see [migration audit](compat/migration.json) | Flush all completed tool arguments once, including complete final name chunks |

@@ -2,6 +2,17 @@
 
 A compatibility fork of [ormandj/sglang-deepseek-v41-flash-sm120](https://github.com/ormandj/sglang-deepseek-v41-flash-sm120), with applicable correctness fixes from the [0731 project](https://github.com/ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000) and a validated four-GPU serving profile. [中文说明](README.zh-CN.md) · [Run guide](RUN.md) · [Validation record](compat/validation.json).
 
+## Acknowledgments and provenance
+
+This work builds on two projects. We thank their maintainers and contributors for sharing the implementations, deployment recipes and validation work that made this fork possible:
+
+- **[ormandj/sglang-deepseek-v41-flash-sm120](https://github.com/ormandj/sglang-deepseek-v41-flash-sm120)** provides the primary V4.1/1017 baseline: the pinned source and build stack, SM120 optimization patch series, TP4/EP2 serving recipe, DSPARK/SPS integration and documentation. This fork starts from commit [`11c525d`](https://github.com/ormandj/sglang-deepseek-v41-flash-sm120/commit/11c525d0234dc25e167e4d6bb0fe9fe757762f5f) and preserves its Git history.
+- **[Ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000](https://github.com/ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000)** provides the 0731 four-GPU deployment experience and correctness patches used in the compatibility migration, including work by the SGLang contributors cited there. We evaluated its patch set at commit [`79bbc00`](https://github.com/ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000/commit/79bbc001db042fc85dc2b15e4175210eaec3e78e); the [migration record](compat/migration.json) accounts for all 33 patches, with 7 ported, 22 already equivalent and 4 not applicable.
+
+This fork's contributions are the V4.1 compatibility adaptations, regression tests, build integration fixes, configurable TP4 launcher and validation on the documented hardware. Credit for the underlying framework, algorithms, kernels and original patches belongs to their respective authors. Patch authorship and upstream pull-request links are retained below and in the [original 0731 patches](compat/upstream-0731/patches/). See [NOTICE.md](NOTICE.md), the [Apache-2.0 license](LICENSE) and the preserved Ombori [NOTICE](compat/upstream-0731/NOTICE) and [LICENSE](compat/upstream-0731/LICENSE) for attribution and license details.
+
+## Published scope
+
 This repository publishes source, configuration and validation summaries. **It does not currently publish a downloadable container image or a stable fork release.** Build the local candidate `local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.3`, or set `IMAGE` to a compatible image you have already obtained. The upstream stable image `ghcr.io/ormandj/sglang-deepseek-v41-flash-sm120:v0.4.3` does not include this fork's compatibility fixes.
 
 | Item | Profile |
@@ -93,14 +104,14 @@ SGLang series, applied in order to the pinned SGLang commit:
 | 30 | `30-openai-abort-finish-reason.patch` | [sgl-project/sglang#45132](https://github.com/sgl-project/sglang/pull/45132) | Aborted requests are reported as an error or a stop, never `finish_reason: "abort"` |
 | 31 | `31-openai-stream-exception-frame.patch` | [sgl-project/sglang#45133](https://github.com/sgl-project/sglang/pull/45133) | Failed chat and completion streams end with an error frame and `[DONE]` |
 | 32 | `32-dsv41-effort-minimal-medium.patch` | [sgl-project/sglang#45134](https://github.com/sgl-project/sglang/pull/45134) | DeepSeek-V4.1 supports `reasoning_effort` `minimal` and `medium` |
-| 33 | `33-compat-verify-penalties.patch` | Local compatibility port; see [migration audit](compat/migration.json) | Restore additive and repetition penalties across DFLASH/DSPARK verify and skip gates |
-| 34 | `34-compat-committed-penalty-state.patch` | Local compatibility port; see [migration audit](compat/migration.json) | Track all committed speculative output tokens exactly once across batch reuse/filter/merge |
-| 35 | `35-compat-tool-final-flush.patch` | Local compatibility port; see [migration audit](compat/migration.json) | Flush all completed tool arguments once, including complete final name chunks |
-| 36 | `36-compat-reasoning-prefix.patch` | Local compatibility port; see [migration audit](compat/migration.json) | Hold trailing partial reasoning and tool markers in normal text |
-| 37 | `37-compat-request-routing-key.patch` | Local compatibility port; see [migration audit](compat/migration.json) | Preserve request routing keys when slicing batched generation requests |
-| 38 | `38-compat-deepgemm-warmup-budget.patch` | Local compatibility port; see [migration audit](compat/migration.json) | Skip DeepGEMM warmup when no supported shape fits available memory |
-| 39 | `39-compat-draft-sentinel.patch` | Local compatibility port; see [migration audit](compat/migration.json) | Keep degenerate Markov greedy draft rows within vocabulary bounds |
-| 40 | `40-compat-cpu-regressions.patch` | Local compatibility port; see [migration audit](compat/migration.json) | CPU regression coverage for migrated behavior and retained V4.1 DSML parsing |
+| 33 | `33-compat-verify-penalties.patch` | [Ombori 0731](https://github.com/ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000) compatibility port; see [migration audit](compat/migration.json) | Restore additive and repetition penalties across DFLASH/DSPARK verify and skip gates |
+| 34 | `34-compat-committed-penalty-state.patch` | [Ombori 0731](https://github.com/ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000) compatibility port; see [migration audit](compat/migration.json) | Track all committed speculative output tokens exactly once across batch reuse/filter/merge |
+| 35 | `35-compat-tool-final-flush.patch` | [Ombori 0731](https://github.com/ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000) compatibility port; see [migration audit](compat/migration.json) | Flush all completed tool arguments once, including complete final name chunks |
+| 36 | `36-compat-reasoning-prefix.patch` | [Ombori 0731](https://github.com/ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000) compatibility port; see [migration audit](compat/migration.json) | Hold trailing partial reasoning and tool markers in normal text |
+| 37 | `37-compat-request-routing-key.patch` | [Ombori 0731](https://github.com/ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000) compatibility port; see [migration audit](compat/migration.json) | Preserve request routing keys when slicing batched generation requests |
+| 38 | `38-compat-deepgemm-warmup-budget.patch` | [Ombori 0731](https://github.com/ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000) compatibility port; see [migration audit](compat/migration.json) | Skip DeepGEMM warmup when no supported shape fits available memory |
+| 39 | `39-compat-draft-sentinel.patch` | [Ombori 0731](https://github.com/ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000) compatibility port; see [migration audit](compat/migration.json) | Keep degenerate Markov greedy draft rows within vocabulary bounds |
+| 40 | `40-compat-cpu-regressions.patch` | Local regression tests for migrated fixes; see [migration audit](compat/migration.json) | CPU regression coverage for migrated behavior and retained V4.1 DSML parsing |
 
 FlashInfer series, applied to the pinned FlashInfer commit:
 
@@ -114,8 +125,8 @@ Triton series, applied to the pinned Triton commit:
 |---|---|---|---|
 | tr-01 | `tr-01-release-3.8-dot-operand-remat.patch` | [triton-lang/triton#11940](https://github.com/triton-lang/triton/pull/11940), backported to `release/3.8.x` | Restore dot-operand rematerialization reuse: Triton 3.8.0 (issue #11526) sends tf32x3 dot operands through extra shared-memory round trips |
 
-Patches marked "not yet upstream" are under preparation for upstream review. [BUILDING.md](BUILDING.md) describes the build and release workflows.
+Patches marked "not yet upstream" are inherited from the ormandj baseline; the label records their status in that baseline. [BUILDING.md](BUILDING.md) describes the build and release workflows.
 
 ## License
 
-The repository's own files are licensed under the [Apache License 2.0](LICENSE). The patches modify Apache-2.0 upstream projects and keep their licenses; the DeepSeek-V4.1-Flash weights are distributed by DeepSeek under the MIT License. See [NOTICE.md](NOTICE.md).
+The repository's own files are licensed under the [Apache License 2.0](LICENSE). Dependencies and derived patches retain their applicable upstream licenses and notices; the DeepSeek-V4.1-Flash weights are distributed by DeepSeek under the MIT License. See [NOTICE.md](NOTICE.md).

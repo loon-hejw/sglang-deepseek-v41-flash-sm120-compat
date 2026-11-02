@@ -4,6 +4,15 @@
 
 **本仓库发布源码、配置与验证摘要，尚未发布可公开拉取的兼容镜像或稳定版 Release。** 本地镜像完整名称为 `local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.3`。原版 `ghcr.io/ormandj/sglang-deepseek-v41-flash-sm120:v0.4.3` 不包含本项目新增的兼容修复。镜像构建输入及已验收版本保持不变。
 
+## 致谢与项目来源
+
+本项目建立在以下两个开源项目的工作之上。感谢两方维护者及贡献者公开实现、部署方案和验证经验，为本仓库的兼容适配提供基础：
+
+- **[ormandj/sglang-deepseek-v41-flash-sm120](https://github.com/ormandj/sglang-deepseek-v41-flash-sm120)**：本仓库的主要 V4.1/1017 基线，提供锁定源码与构建栈、SM120 优化补丁系列、TP4/EP2 部署方案、DSPARK/SPS 集成及文档。本仓库从其 [`11c525d`](https://github.com/ormandj/sglang-deepseek-v41-flash-sm120/commit/11c525d0234dc25e167e4d6bb0fe9fe757762f5f) 提交继续开发，保留原有 Git 历史。
+- **[Ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000](https://github.com/ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000)**：提供 0731 四卡部署经验及本次兼容迁移所参考的正确性修复，其中也包含其注明来源的 SGLang 贡献者工作。本仓库以其 [`79bbc00`](https://github.com/ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000/commit/79bbc001db042fc85dc2b15e4175210eaec3e78e) 提交为迁移来源，对全部 33 项补丁逐项核对，记录为 7 项迁移、22 项已有等效实现、4 项不适用，详见[迁移清单](compat/migration.json)。
+
+本仓库新增工作集中于 V4.1 兼容适配、回归测试、构建集成修复、可配置的 TP4 启动入口及所述硬件上的部署验证。底层框架、算法、内核和原始补丁的贡献归属于各自作者。[英文补丁表](README.md#source-and-patches)及[0731 原始补丁](compat/upstream-0731/patches/)保留作者信息与上游 PR 引用；项目归属和许可证见 [NOTICE.md](NOTICE.md)、[Apache-2.0](LICENSE)，以及保留的 Ombori [NOTICE](compat/upstream-0731/NOTICE) 和 [LICENSE](compat/upstream-0731/LICENSE)。
+
 ## 修复内容与来源
 
 [迁移清单](compat/migration.json) 对旧项目 33 项补丁逐一给出来源、哈希和处理结果：7 项迁移、22 项已有等效实现、4 项不适用。最终 SGLang 系列共 40 个补丁，包括 7 个新增运行时修复及 1 个 CPU 测试补丁；FlashInfer、DeepGEMM、Triton 的锁定版本保留。

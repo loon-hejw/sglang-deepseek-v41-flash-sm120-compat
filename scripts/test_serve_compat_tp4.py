@@ -61,6 +61,10 @@ class LauncherTest(unittest.TestCase):
             with self.subTest(flag=key): self.assertEqual(self.value(args, key), value)
         self.assertIn('--detach', args)
         self.assertNotIn('--rm', args)
+        self.assertNotIn('--memory', args)
+        self.assertNotIn('--cpus', args)
+        self.assertNotIn('--cpuset-mems', args)
+        self.assertEqual(self.value(args, '--entrypoint'), 'sglang')
         self.assertIn(str(self.model.resolve()) + ':/models/deepseek-v41-flash:ro', args)
         self.assertIn(str(self.cache.resolve()) + ':/root/.cache', args)
         self.assertIn('CUDA_VISIBLE_DEVICES=0,1,2,3', args)
@@ -91,6 +95,51 @@ class LauncherTest(unittest.TestCase):
         self.assertNotIn('--enable-hierarchical-cache', args)
         self.assertNotIn('--hicache-ratio', args)
         self.assertNotIn('--api-key', args)
+
+    def test_shared_host_profile_bounds_resources_and_keeps_engine(self):
+        result = self.launch(HOST_PROFILE='shared', NUMA_MEMORY_NODE='1')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        args = self.captured()
+        expected = {'--memory':'224g', '--memory-swap':'224g', '--cpus':'16',
+                    '--cpuset-mems':'1', '--entrypoint':'python3', '--hicache-ratio':'0.1',
+                    '--tp-size':'4', '--ep-size':'2', '--mem-fraction-static':'0.85',
+                    '--max-running-requests':'16'}
+        for key, value in expected.items():
+            with self.subTest(flag=key): self.assertEqual(self.value(args, key), value)
+        self.assertNotIn('--attn-dp-size', args)
+        self.assertNotIn('--enable-dp-lm-head', args)
+        wrapper_index = args.index('-c')
+        self.assertIn('p(41,1,0,0,0)', args[wrapper_index + 1])
+        self.assertIn('p(42,0,0,0,0)', args[wrapper_index + 1])
+        self.assertEqual(args[wrapper_index + 2:wrapper_index + 4], ['sglang', 'serve'])
+
+    def test_shared_preview_has_no_side_effects_and_redacts_key(self):
+        result = self.launch('--dry-run', HOST_PROFILE='shared', NUMA_MEMORY_NODE='0')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('--memory 224g', result.stdout)
+        self.assertNotIn(self.env['API_KEY'], result.stdout + result.stderr)
+        self.assertFalse(self.cache.exists())
+        self.assertFalse(self.capture.exists())
+
+    def test_shared_host_requires_explicit_valid_numa_placement(self):
+        for values in [{'HOST_PROFILE':'shared'}, {'HOST_PROFILE':'unknown'},
+                       {'NUMA_MEMORY_NODE':'1'}, {'HOST_PROFILE':'shared', 'NUMA_MEMORY_NODE':'0,1'},
+                       {'HOST_PROFILE':'shared', 'NUMA_MEMORY_NODE':'-1'},
+                       {'HOST_PROFILE':'shared', 'NUMA_MEMORY_NODE':'00'}]:
+            with self.subTest(values=values):
+                self.assertNotEqual(self.launch(**values).returncode, 0)
+                self.assertFalse(self.capture.exists())
+                self.assertFalse(self.cache.exists())
+
+    def test_fractional_cache_ratio_and_invalid_values(self):
+        result = self.launch(HICACHE_RATIO='0.1')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.value(self.captured(), '--hicache-ratio'), '0.1')
+        self.capture.unlink()
+        for value in ['0.0', '-0.1', 'NaN', '1e2', '0.1; echo bad']:
+            with self.subTest(value=value):
+                self.assertNotEqual(self.launch(HICACHE_RATIO=value).returncode, 0)
+                self.assertFalse(self.capture.exists())
 
     def test_invalid_resource_selection_fails_before_docker(self):
         for devices in ['all', '0,1,2', '0,1,2,3,4', '0,1,1,3', '0,1,2,3,',

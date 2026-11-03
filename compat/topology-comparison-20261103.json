@@ -1,0 +1,575 @@
+{
+  "schema": 1,
+  "recorded_date": "2026-11-03",
+  "status": "preliminary; experiment ended early by operator decision",
+  "artifact": {
+    "image": "ghcr.io/loon-hejw/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.4",
+    "manifest_digest": "sha256:0a32f40290db16a139ee2ac38ec4a8641b7310de07b79a249dd1c11d46a48a92",
+    "source_revision": "b808761fbef06cec27ce7b3afc55c372cefa78c1",
+    "rebuilt_for_experiment": false
+  },
+  "hardware": {
+    "host_gpu_count": 8,
+    "gpu": "NVIDIA RTX PRO 6000 Blackwell",
+    "gpu_memory_gib": 96,
+    "cpu": "2 x Intel Xeon Platinum 8480+",
+    "host_memory_gib": 503,
+    "driver": "610.43.02",
+    "gpu_power_limit_w": 600
+  },
+  "decision": "Retain TP4 / attention DP1 / EP2 with mem_fraction_static=0.85; stop the DP4 experiment. This is not stable-release qualification.",
+  "configurations": {
+    "retained_dp1_ep2": {
+      "parameters": {
+        "tp_size": 4,
+        "dp_size": 1,
+        "attn_dp_size": 1,
+        "ep_size": 2,
+        "enable_dp_attention": false,
+        "enable_dp_lm_head": false,
+        "moe_a2a_backend": "none",
+        "context_length": 1048576,
+        "max_running_requests": 16,
+        "chunked_prefill_size": 8192,
+        "max_prefill_tokens": 8192,
+        "cuda_graph_max_bs_decode": 16,
+        "speculative_algorithm": "DSPARK",
+        "speculative_dspark_block_size": 5,
+        "speculative_dspark_sps_autotune": "auto",
+        "mem_fraction_static": 0.85,
+        "kv_cache_dtype": "fp8_e4m3",
+        "enable_hierarchical_cache": true,
+        "hicache_ratio": 0.1,
+        "attention_backend": "dsv4",
+        "moe_runner_backend": "flashinfer_mxfp4",
+        "reasoning_parser": "deepseek-v41",
+        "tool_call_parser": "deepseekv41",
+        "load_balance_method": "round_robin",
+        "schedule_conservativeness": 1.0,
+        "max_total_num_tokens": 2772736,
+        "max_req_input_len": 1048570,
+        "startup_time": {
+          "load_weight": 229.12405225727707,
+          "kv_cache_allocation": 0.9896060591563582,
+          "scheduler_e2e": 270.2507061334327,
+          "cuda_graph": {
+            "prefill": 0.0,
+            "decode": 0.0,
+            "target_verify": 18.90665734745562,
+            "draft_prefill": 0.0,
+            "draft_decode": 2.1580392261967063,
+            "draft_extend": 0.0
+          },
+          "tokenizer_e2e": 282.18574699480087
+        },
+        "swa_full_tokens_ratio": 0.8
+      },
+      "gpus": 4,
+      "host_limits": {
+        "memory_gib": 224,
+        "swap": false,
+        "cpu_quota": 16,
+        "process_thp_disabled": true
+      }
+    },
+    "experimental_dp4_ep4": {
+      "parameters": {
+        "tp_size": 4,
+        "dp_size": 1,
+        "attn_dp_size": 4,
+        "ep_size": 4,
+        "enable_dp_attention": true,
+        "enable_dp_lm_head": true,
+        "moe_a2a_backend": "none",
+        "context_length": 1048576,
+        "max_running_requests": 16,
+        "chunked_prefill_size": 2048,
+        "max_prefill_tokens": 8192,
+        "cuda_graph_max_bs_decode": 16,
+        "speculative_algorithm": "DSPARK",
+        "speculative_dspark_block_size": 5,
+        "speculative_dspark_sps_autotune": "auto",
+        "mem_fraction_static": 0.9,
+        "kv_cache_dtype": "fp8_e4m3",
+        "enable_hierarchical_cache": true,
+        "hicache_ratio": 0.1,
+        "attention_backend": "dsv4",
+        "moe_runner_backend": "flashinfer_mxfp4",
+        "reasoning_parser": "deepseek-v41",
+        "tool_call_parser": "deepseekv41",
+        "load_balance_method": "round_robin",
+        "schedule_conservativeness": 0.3,
+        "max_total_num_tokens": 1981440,
+        "max_req_input_len": 1048570,
+        "startup_time": {
+          "load_weight": 172.0958267543465,
+          "kv_cache_allocation": 0.5997105706483126,
+          "scheduler_e2e": 204.74499860126525,
+          "cuda_graph": {
+            "prefill": 0.0,
+            "decode": 0.0,
+            "target_verify": 11.830586498603225,
+            "draft_prefill": 0.0,
+            "draft_decode": 2.7455956311896443,
+            "draft_extend": 0.0
+          },
+          "tokenizer_e2e": 216.98703090660274
+        },
+        "swa_full_tokens_ratio": 0.8
+      },
+      "gpus": 4,
+      "host_limits": {
+        "memory_gib": 224,
+        "swap": false,
+        "cpu_quota": 16,
+        "process_thp_disabled": true
+      }
+    }
+  },
+  "controls": {
+    "same_model_image_environment": true,
+    "same_host_resource_caps": true,
+    "explicit_changes": [
+      "ep_size 2 to 4",
+      "attn_dp_size 1 to 4",
+      "enable_dp_lm_head false to true",
+      "mem_fraction_static 0.85 to 0.90"
+    ],
+    "placement": "Different four-GPU groups and NUMA memory nodes on the same host; separate cache and process histories.",
+    "memory_requirement": "DP4 at 0.85 could not allocate KV after loading weights; the runtime required more than approximately 0.867. The measured DP4 configuration used 0.90."
+  },
+  "quality": {
+    "cases": 51,
+    "temperatures": [
+      0,
+      1
+    ],
+    "top_p": 1,
+    "repetitions_per_temperature": 1,
+    "concurrency_per_configuration": 1,
+    "requests": 204,
+    "excluded_case": {
+      "id": "arithmetic_invoice",
+      "reason": "Ambiguous wording identified before this experiment; excluded symmetrically."
+    },
+    "thinking": "high plus thinking=true for reasoning/coding; none plus thinking=false elsewhere",
+    "budgets": {
+      "reasoning": 12288,
+      "coding": 12288,
+      "tools": 4096,
+      "other": 2048
+    },
+    "max_input_tokens": 160054,
+    "scoring": "Exact instructions/JSON types/tool arguments, stream completion, and isolated CPU code unit tests; truncation is a failure. No failed response replaced.",
+    "results": {
+      "retained_dp1_ep2": {
+        "passed": 100,
+        "total": 102,
+        "api_errors": 0,
+        "truncated": 1,
+        "by_category": {
+          "coding": {
+            "passed": 15,
+            "total": 16
+          },
+          "instructions": {
+            "passed": 16,
+            "total": 16
+          },
+          "long_context": {
+            "passed": 8,
+            "total": 8
+          },
+          "penalties": {
+            "passed": 8,
+            "total": 8
+          },
+          "reasoning": {
+            "passed": 22,
+            "total": 22
+          },
+          "structured": {
+            "passed": 16,
+            "total": 16
+          },
+          "tools": {
+            "passed": 15,
+            "total": 16
+          }
+        }
+      },
+      "experimental_dp4_ep4": {
+        "passed": 97,
+        "total": 102,
+        "api_errors": 0,
+        "truncated": 2,
+        "by_category": {
+          "coding": {
+            "passed": 14,
+            "total": 16
+          },
+          "instructions": {
+            "passed": 16,
+            "total": 16
+          },
+          "long_context": {
+            "passed": 7,
+            "total": 8
+          },
+          "penalties": {
+            "passed": 8,
+            "total": 8
+          },
+          "reasoning": {
+            "passed": 22,
+            "total": 22
+          },
+          "structured": {
+            "passed": 16,
+            "total": 16
+          },
+          "tools": {
+            "passed": 14,
+            "total": 16
+          }
+        }
+      }
+    },
+    "failures": [
+      {
+        "configuration": "experimental_dp4_ep4",
+        "case": "code_csv_totals",
+        "category": "coding",
+        "temperature": 1,
+        "finish": [
+          "length"
+        ],
+        "failed_checks": [
+          "complete",
+          "unit_tests"
+        ]
+      },
+      {
+        "configuration": "retained_dp1_ep2",
+        "case": "tool_literal_markers",
+        "category": "tools",
+        "temperature": 0,
+        "finish": [
+          "tool_calls"
+        ],
+        "failed_checks": [
+          "tool_arguments"
+        ]
+      },
+      {
+        "configuration": "experimental_dp4_ep4",
+        "case": "tool_literal_markers",
+        "category": "tools",
+        "temperature": 0,
+        "finish": [
+          "tool_calls"
+        ],
+        "failed_checks": [
+          "tool_arguments"
+        ]
+      },
+      {
+        "configuration": "experimental_dp4_ep4",
+        "case": "tool_literal_markers",
+        "category": "tools",
+        "temperature": 1,
+        "finish": [
+          "tool_calls"
+        ],
+        "failed_checks": [
+          "tool_arguments"
+        ]
+      },
+      {
+        "configuration": "retained_dp1_ep2",
+        "case": "code_run_length",
+        "category": "coding",
+        "temperature": 0,
+        "finish": [
+          "length"
+        ],
+        "failed_checks": [
+          "complete",
+          "unit_tests"
+        ]
+      },
+      {
+        "configuration": "experimental_dp4_ep4",
+        "case": "code_run_length",
+        "category": "coding",
+        "temperature": 0,
+        "finish": [
+          "length"
+        ],
+        "failed_checks": [
+          "complete",
+          "unit_tests"
+        ]
+      },
+      {
+        "configuration": "experimental_dp4_ep4",
+        "case": "context_6400",
+        "category": "long_context",
+        "temperature": 1,
+        "finish": [
+          "stop"
+        ],
+        "failed_checks": [
+          "parseable_answer"
+        ]
+      }
+    ],
+    "format_diagnostic": "The experimental context_6400 answer at temperature 1 had correct values wrapped in Markdown; strict JSON scoring still fails it."
+  },
+  "performance": {
+    "completed_batches": 18,
+    "planned_batches": 48,
+    "measured_requests": 78,
+    "workload": "Chinese explanation of database transaction isolation with examples, concurrency steps and choice criteria; 40 input tokens.",
+    "thinking": false,
+    "temperature": 1,
+    "top_p": 1,
+    "output_tokens_per_request": 1024,
+    "reasoning_tokens_in_measured_outputs": 0,
+    "concurrency": [
+      1,
+      4,
+      8
+    ],
+    "repetitions": 3,
+    "warmup": "Each concurrency warmed before measurement, with at least four requests; warmups excluded. Repeated prefixes, no cache flush, round-robin server routing.",
+    "order": "Servers measured separately; order alternated by repetition.",
+    "metric": "Returned completion tokens, including any reasoning, divided by batch wall time including TTFT. Reasoning was disabled and observed as zero. Concurrent totals are not individual request speeds or server decode-log rates.",
+    "batches": [
+      {
+        "configuration": "experimental_dp4_ep4",
+        "workload": "explanation",
+        "concurrency": 1,
+        "repetition": 0,
+        "requests": 1,
+        "output_tokens": 1024,
+        "elapsed_seconds": 8.199896071106195,
+        "output_tokens_per_second": 124.87963153682492
+      },
+      {
+        "configuration": "retained_dp1_ep2",
+        "workload": "explanation",
+        "concurrency": 1,
+        "repetition": 0,
+        "requests": 1,
+        "output_tokens": 1024,
+        "elapsed_seconds": 5.55943348724395,
+        "output_tokens_per_second": 184.1914292795399
+      },
+      {
+        "configuration": "retained_dp1_ep2",
+        "workload": "explanation",
+        "concurrency": 1,
+        "repetition": 1,
+        "requests": 1,
+        "output_tokens": 1024,
+        "elapsed_seconds": 4.747493784874678,
+        "output_tokens_per_second": 215.6927520921507
+      },
+      {
+        "configuration": "experimental_dp4_ep4",
+        "workload": "explanation",
+        "concurrency": 1,
+        "repetition": 1,
+        "requests": 1,
+        "output_tokens": 1024,
+        "elapsed_seconds": 8.518789297901094,
+        "output_tokens_per_second": 120.20487468240337
+      },
+      {
+        "configuration": "experimental_dp4_ep4",
+        "workload": "explanation",
+        "concurrency": 1,
+        "repetition": 2,
+        "requests": 1,
+        "output_tokens": 1024,
+        "elapsed_seconds": 8.160978335887194,
+        "output_tokens_per_second": 125.47515234748865
+      },
+      {
+        "configuration": "retained_dp1_ep2",
+        "workload": "explanation",
+        "concurrency": 1,
+        "repetition": 2,
+        "requests": 1,
+        "output_tokens": 1024,
+        "elapsed_seconds": 4.173925934359431,
+        "output_tokens_per_second": 245.33257563832464
+      },
+      {
+        "configuration": "experimental_dp4_ep4",
+        "workload": "explanation",
+        "concurrency": 4,
+        "repetition": 0,
+        "requests": 4,
+        "output_tokens": 4096,
+        "elapsed_seconds": 9.632181688211858,
+        "output_tokens_per_second": 425.24114812045156
+      },
+      {
+        "configuration": "retained_dp1_ep2",
+        "workload": "explanation",
+        "concurrency": 4,
+        "repetition": 0,
+        "requests": 4,
+        "output_tokens": 4096,
+        "elapsed_seconds": 7.004471868276596,
+        "output_tokens_per_second": 584.7692841127498
+      },
+      {
+        "configuration": "retained_dp1_ep2",
+        "workload": "explanation",
+        "concurrency": 4,
+        "repetition": 1,
+        "requests": 4,
+        "output_tokens": 4096,
+        "elapsed_seconds": 6.99970121961087,
+        "output_tokens_per_second": 585.1678338104417
+      },
+      {
+        "configuration": "experimental_dp4_ep4",
+        "workload": "explanation",
+        "concurrency": 4,
+        "repetition": 1,
+        "requests": 4,
+        "output_tokens": 4096,
+        "elapsed_seconds": 9.84017204400152,
+        "output_tokens_per_second": 416.2528847752093
+      },
+      {
+        "configuration": "experimental_dp4_ep4",
+        "workload": "explanation",
+        "concurrency": 4,
+        "repetition": 2,
+        "requests": 4,
+        "output_tokens": 4096,
+        "elapsed_seconds": 10.430026811547577,
+        "output_tokens_per_second": 392.7123174280937
+      },
+      {
+        "configuration": "retained_dp1_ep2",
+        "workload": "explanation",
+        "concurrency": 4,
+        "repetition": 2,
+        "requests": 4,
+        "output_tokens": 4096,
+        "elapsed_seconds": 7.2119779428467155,
+        "output_tokens_per_second": 567.9440553562238
+      },
+      {
+        "configuration": "experimental_dp4_ep4",
+        "workload": "explanation",
+        "concurrency": 8,
+        "repetition": 0,
+        "requests": 8,
+        "output_tokens": 8192,
+        "elapsed_seconds": 12.39905784279108,
+        "output_tokens_per_second": 660.6953612014078
+      },
+      {
+        "configuration": "retained_dp1_ep2",
+        "workload": "explanation",
+        "concurrency": 8,
+        "repetition": 0,
+        "requests": 8,
+        "output_tokens": 8192,
+        "elapsed_seconds": 10.074267696589231,
+        "output_tokens_per_second": 813.1608417327944
+      },
+      {
+        "configuration": "retained_dp1_ep2",
+        "workload": "explanation",
+        "concurrency": 8,
+        "repetition": 1,
+        "requests": 8,
+        "output_tokens": 8192,
+        "elapsed_seconds": 9.981101175770164,
+        "output_tokens_per_second": 820.7511231212309
+      },
+      {
+        "configuration": "experimental_dp4_ep4",
+        "workload": "explanation",
+        "concurrency": 8,
+        "repetition": 1,
+        "requests": 8,
+        "output_tokens": 8192,
+        "elapsed_seconds": 12.236647295765579,
+        "output_tokens_per_second": 669.4644212581655
+      },
+      {
+        "configuration": "experimental_dp4_ep4",
+        "workload": "explanation",
+        "concurrency": 8,
+        "repetition": 2,
+        "requests": 8,
+        "output_tokens": 8192,
+        "elapsed_seconds": 11.657999644055963,
+        "output_tokens_per_second": 702.6934508594566
+      },
+      {
+        "configuration": "retained_dp1_ep2",
+        "workload": "explanation",
+        "concurrency": 8,
+        "repetition": 2,
+        "requests": 8,
+        "output_tokens": 8192,
+        "elapsed_seconds": 10.064637827686965,
+        "output_tokens_per_second": 813.9388759190622
+      }
+    ],
+    "medians": [
+      {
+        "workload": "explanation",
+        "concurrency": 1,
+        "repetitions": 3,
+        "retained_dp1_ep2": 215.6927520921507,
+        "experimental_dp4_ep4": 124.87963153682492,
+        "dp4_change_percent": -42.10300052944179
+      },
+      {
+        "workload": "explanation",
+        "concurrency": 4,
+        "repetitions": 3,
+        "retained_dp1_ep2": 584.7692841127498,
+        "experimental_dp4_ep4": 416.2528847752093,
+        "dp4_change_percent": -28.817587365797536
+      },
+      {
+        "workload": "explanation",
+        "concurrency": 8,
+        "repetitions": 3,
+        "retained_dp1_ep2": 813.9388759190622,
+        "experimental_dp4_ep4": 669.4644212581655,
+        "dp4_change_percent": -17.75003737200325
+      }
+    ]
+  },
+  "not_completed": [
+    "C16 performance",
+    "code-generation performance",
+    "low-thinking code follow-up"
+  ],
+  "limitations": [
+    "DP, EP, LM head and memory fraction changed together; placement differs. This is not an isolated DP causal experiment.",
+    "Seeds were supplied, but deterministic inference was disabled; identical seeds do not establish identical random streams or bitwise outputs.",
+    "One response per case/temperature and three speed repetitions; small synthetic sample. No general quality or real-world performance claim.",
+    "Short-input performance only; not full 1M context, long-context throughput, sustained-load or multimodal qualification.",
+    "The low-thinking coding follow-up was not run; earlier coding-profile results belong to their original experiment."
+  ],
+  "evidence_sha256": {
+    "quality-results.jsonl": "e75988904f8795290360044bd435c3455e4b38dbcc97464d36695e7e5d9c8925",
+    "speed-batches.jsonl": "9574a018c91281a854b291423d0eff70d611b20b610a91c090f866ecd1ba944c",
+    "speed-results.jsonl": "4a4ec67d04b2ecdc4f4e8fc8c86c11c89b26811102e77917126843ec61629082",
+    "cases.json": "81113f43dfa2e6cdcd5677c1126e553243357818cb5321d64122f636abd6f956"
+  }
+}

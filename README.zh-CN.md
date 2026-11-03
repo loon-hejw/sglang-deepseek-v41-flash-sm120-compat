@@ -58,17 +58,21 @@ bash examples/serve-compat-tp4.sh
 
 | 项目 | 配置 |
 | --- | --- |
-| 并行 | TP4 / EP2，`moe-a2a-backend=none` |
+| 并行 | TP4 / Attention DP1 / EP2，`moe-a2a-backend=none` |
 | 推测解码 | DSPARK block 5，auto SPS，compact ragged verify，graph tier 对齐 |
 | 上下文 / 并发 | 1,048,576 / 最多 16 路 |
 | KV / 静态显存比例 | `fp8_e4m3` / **0.85** |
 | Prefill | chunk 8192、max prefill tokens 8192 |
 | 后端 | attention `dsv4`、MoE `flashinfer_mxfp4`、FP8 GEMM `flashinfer_cutlass` |
-| 缓存 | HiCache ratio 2，Engram host table 按 rank 分片，encoder/decoder SWA bounded replay |
+| 缓存 | 默认 HiCache ratio 2；共享主机配置为 0.1，Engram host table 按 rank 分片，encoder/decoder SWA bounded replay |
 | 解析 | reasoning `deepseek-v41`、tool calls `deepseekv41` |
 | 默认采样 | OpenAI 默认值，temperature 1.0、top_p 1.0；客户端显式值优先 |
 
 显式启用 PCIe-IPC all-reduce、SM120 MXFP8 skinny GEMM、BF16 skinny LM head、WO-A FP8 copy；保留重叠调度，编译任务数限制为 4。完整参数及环境变量接口见 [RUN.md](RUN.md)。0.80 在已验证硬件上无法为模型和草稿权重之外的 KV 池留出空间，实际采用并验证了 0.85。
+
+共享主机部署可显式设置 `HOST_PROFILE=shared` 和与所选 GPU 对应的 `NUMA_MEMORY_NODE`：采用 224 GiB 内存上限、无 swap、16 CPU 配额、进程级 THP 关闭和 HiCache ratio 0.1，保留 TP4 / Attention DP1 / EP2。启动器不负责集群 GPU 预留或持续内存监督，使用前需安排资源隔离。用法及运行边界见 [RUN.md 的共享主机配置](RUN.md#shared-host-profile)。
+
+[初步并行配置对比](compat/topology-comparison-20261103.json)记录了保留该配置的依据：204 次主质量请求全部完成，原配置通过 100/102，DP4/EP4 实验配置通过 97/102；仅完成 18/48 组短输入测速后结束实验。DP4 另需显存比例 0.90，两边物理 GPU/NUMA 分组也不同，不能单独归因于 DP。C16、代码生成测速和追加 low 思考代码复测未完成。本次提交归档配置与脱敏摘要，不产生新镜像，也不代表稳定版或普遍性能结论。
 
 ## 验收证据与边界
 

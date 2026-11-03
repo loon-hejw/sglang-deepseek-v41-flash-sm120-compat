@@ -19,13 +19,15 @@ This repository publishes source, configuration, validation summaries and the Li
 | --- | --- |
 | Model | `deepseek-ai/DeepSeek-V4.1-Flash-1017` at revision `1bae0e1088993b9b82de08f59de5be5a34e42170` |
 | Hardware | Four 96 GB RTX PRO 6000 Blackwell GPUs (SM120), working PCIe P2P, Linux amd64 |
-| Parallelism | TP4 / EP2; no MoE all-to-all backend |
+| Parallelism | TP4 / attention DP1 / EP2; no MoE all-to-all backend |
 | Speculation | DSPARK block 5, automatic SPS profiling, compact ragged verification |
 | Context / concurrency | 1,048,576 tokens per request / at most 16 running requests |
 | KV / static memory fraction | FP8 E4M3 / 0.85 |
 | Host memory | Engram tables use about 189 GiB plus HiCache and runtime allocations; the qualified host has 503 GiB RAM |
 | Storage | About 480 GiB for the checkpoint, additional image/build space, and a persistent compilation cache |
 | API | OpenAI chat completions; default model `deepseek-v4.1-flash-1017`, host port `18001` |
+
+For the retained shared-host configuration, set `HOST_PROFILE=shared` and an explicit `NUMA_MEMORY_NODE` matching the selected GPUs. This applies a 224 GiB memory cap, no swap, a 16 CPU quota, process-local THP disable and HiCache ratio 0.1 while keeping TP4 / attention DP1 / EP2. The standalone launcher does not reserve cluster GPUs or continuously supervise host resources. See the [shared-host instructions](RUN.md#shared-host-profile) and the [preliminary topology comparison](compat/topology-comparison-20261103.json). That experiment completed 204 quality requests and 18 of 48 performance batches before being deliberately ended; it does not qualify the unfinished workloads or a stable release.
 
 ## Quick start
 

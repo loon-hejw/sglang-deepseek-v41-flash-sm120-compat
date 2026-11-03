@@ -59,6 +59,8 @@ root = Path(sys.argv[1])
 files = list(root.glob('*.md')) + list((root/'examples').glob('*.sh')) + [root/'compat/validation.json']
 if (root/'compat/publication.json').exists():
     files.append(root/'compat/publication.json')
+if (root/'compat/topology-comparison-20261103.json').exists():
+    files.append(root/'compat/topology-comparison-20261103.json')
 patterns = [r'10\.216\.', r'harbor\.bhidi\.com', r'/Users/', r'~/git/',
             r'home\.[a-z0-9.-]+\.(?:com|net|org)', r'\u2014',
             r'gh[pousr]_[A-Za-z0-9]{20,}', r'github_pat_[A-Za-z0-9_]{20,}',

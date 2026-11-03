@@ -14,6 +14,8 @@ Defaults: PORT=18001, SERVED_MODEL_NAME=deepseek-v4.1-flash-1017,
 CONTAINER_NAME=deepseek-v41-flash-sm120-compat-tp4, MEM_FRACTION=0.85,
 CONTEXT_LENGTH=1048576, MAX_RUNNING_REQUESTS=16, ENABLE_HICACHE=1,
 HICACHE_RATIO=2, MAX_NEW_TOKENS_LIMIT=393216. IMAGE may override the local image.
+HOST_PROFILE=shared selects 224 GiB RAM, no swap, 16 CPUs, process-local THP
+disable and HICACHE_RATIO=0.1; it requires an explicit NUMA_MEMORY_NODE.
 API_KEY is optional; setting it enables bearer authentication. Never commit it.
 EOF
 }
@@ -32,17 +34,30 @@ CONTEXT_LENGTH=${CONTEXT_LENGTH:-1048576}
 MAX_RUNNING_REQUESTS=${MAX_RUNNING_REQUESTS:-16}
 MAX_NEW_TOKENS_LIMIT=${MAX_NEW_TOKENS_LIMIT:-393216}
 ENABLE_HICACHE=${ENABLE_HICACHE:-1}
-HICACHE_RATIO=${HICACHE_RATIO:-2}
+HOST_PROFILE=${HOST_PROFILE:-dedicated}
 
 fail() { echo "$*" >&2; exit 2; }
+case "$HOST_PROFILE" in
+  dedicated)
+    [[ -z "${NUMA_MEMORY_NODE:-}" ]] || fail 'NUMA_MEMORY_NODE requires HOST_PROFILE=shared'
+    HICACHE_RATIO=${HICACHE_RATIO:-2}
+    ;;
+  shared)
+    [[ "${NUMA_MEMORY_NODE:-}" =~ ^(0|[1-9][0-9]{0,2})$ ]] || fail 'Set NUMA_MEMORY_NODE to the memory node for the selected GPUs'
+    HICACHE_RATIO=${HICACHE_RATIO:-0.1}
+    ;;
+  *) fail 'HOST_PROFILE must be dedicated or shared' ;;
+esac
 [[ "${TP_SIZE:-4}" == 4 ]] || fail 'This profile requires TP_SIZE=4'
 [[ -f "$MODEL_DIR/config.json" ]] || fail 'MODEL_DIR must contain config.json'
 [[ ! -e "$CACHE_DIR" || -d "$CACHE_DIR" ]] || fail 'CACHE_DIR must be a directory'
 [[ "$ENABLE_HICACHE" == 0 || "$ENABLE_HICACHE" == 1 ]] || fail 'ENABLE_HICACHE must be 0 or 1'
-for key in PORT CONTEXT_LENGTH MAX_RUNNING_REQUESTS MAX_NEW_TOKENS_LIMIT HICACHE_RATIO; do
+for key in PORT CONTEXT_LENGTH MAX_RUNNING_REQUESTS MAX_NEW_TOKENS_LIMIT; do
   value=${!key}
   [[ "$value" =~ ^[1-9][0-9]{0,8}$ ]] || fail "$key must be a positive integer"
 done
+[[ "$HICACHE_RATIO" =~ ^(0|[1-9][0-9]{0,8})(\.[0-9]+)?$ ]] || fail 'HICACHE_RATIO must be a positive number'
+awk -v value="$HICACHE_RATIO" 'BEGIN { exit !(value > 0) }' || fail 'HICACHE_RATIO must be positive'
 (( PORT <= 65535 )) || fail 'PORT exceeds 65535'
 (( CONTEXT_LENGTH <= 1048576 )) || fail 'CONTEXT_LENGTH exceeds 1048576'
 (( MAX_RUNNING_REQUESTS <= 16 )) || fail 'This profile supports at most 16 running requests'
@@ -68,7 +83,7 @@ else
 fi
 container_model_path=/models/deepseek-v41-flash
 cmd=(docker run --detach --restart no
-  --name "$CONTAINER_NAME" --entrypoint sglang
+  --name "$CONTAINER_NAME"
   --gpus "\"device=${GPU_DEVICES}\"" --ipc host --ulimit memlock=-1
   --publish "${PORT}:8000"
   --volume "${model_dir}:${container_model_path}:ro"
@@ -95,8 +110,16 @@ cmd=(docker run --detach --restart no
   --env MAX_JOBS=4
   --env TORCHINDUCTOR_CACHE_DIR=/root/.cache/torchinductor
   --env TRITON_CACHE_DIR=/root/.cache/triton
-  --env TILELANG_CACHE_DIR=/root/.cache/tilelang
-  "$IMAGE" serve --model-path "$container_model_path"
+  --env TILELANG_CACHE_DIR=/root/.cache/tilelang)
+if [[ "$HOST_PROFILE" == shared ]]; then
+  # Match the measured host limits; THP changes apply only to this process tree.
+  thp_wrapper='import ctypes,os,sys; p=ctypes.CDLL(None,use_errno=True).prctl; assert p(41,1,0,0,0)==0; assert p(42,0,0,0,0)==1; os.execvp(sys.argv[1],sys.argv[1:])'
+  cmd+=(--memory 224g --memory-swap 224g --cpus 16 --cpuset-mems "$NUMA_MEMORY_NODE"
+    --entrypoint python3 "$IMAGE" -c "$thp_wrapper" sglang)
+else
+  cmd+=(--entrypoint sglang "$IMAGE")
+fi
+cmd+=(serve --model-path "$container_model_path"
   --served-model-name "$SERVED_MODEL_NAME"
   --tp-size 4 --ep-size 2 --moe-a2a-backend none
   --speculative-algorithm DSPARK --speculative-dspark-block-size 5

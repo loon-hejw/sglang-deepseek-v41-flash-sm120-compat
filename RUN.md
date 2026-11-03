@@ -47,6 +47,8 @@ Restart a stopped container with its saved configuration using `docker start dee
 | `MEM_FRACTION` | `0.85`, validated on the stated hardware |
 | `MAX_NEW_TOKENS_LIMIT` | `393216`, cap when a client omits `max_tokens` |
 | `ENABLE_HICACHE` / `HICACHE_RATIO` | `1` / `2`; use `ENABLE_HICACHE=0` to disable the host cache |
+| `HOST_PROFILE` | `dedicated`; `shared` applies the measured 224 GiB / 16 CPU limits and defaults HiCache ratio to `0.1` |
+| `NUMA_MEMORY_NODE` | Required with `HOST_PROFILE=shared`; one memory-node index matching the selected GPU group |
 | `NCCL_P2P_LEVEL` | `SYS`; requires working peer access on the selected GPUs |
 
 The fixed profile is TP4/EP2 with `moe-a2a-backend=none`. It uses FP8 E4M3 KV, `dsv4` attention, FlashInfer MXFP4 MoE and CUTLASS FP8 GEMM; prefill chunk and token limits are both 8192. Decoder CUDA Graphs cover up to 16 requests. Encoder/decoder SWA bounded replay, HiCache, metrics and cache reporting are enabled.
@@ -54,6 +56,36 @@ The fixed profile is TP4/EP2 with `moe-a2a-backend=none`. It uses FP8 E4M3 KV, `
 DSPARK uses block size 5, automatic SPS profiling, compact ragged verification, sub-width tiers, graph-tier alignment and survival EMA 0.15. SPS sampling uses temperature/top_p 1.0. SM120 MXFP8 skinny GEMM, BF16 skinny LM head, WO-A FP8 copy and PCIe-IPC all-reduce are explicit. Engram host tables are sharded per rank, taking about 189 GiB of host memory in total. Compilation is limited to four jobs and caches use persistent TorchInductor, Triton and TileLang paths.
 
 The static memory fraction 0.80 failed to leave a KV pool after loading this model and its draft weights on the qualified four-card host; 0.85 passed. Do not interpret the static fraction as a cap on every CUDA allocation or assume a smaller number is always viable. Plan host memory for Engram, HiCache, runtime and other services; two model replicas duplicate the Engram allocation.
+
+### Shared-host profile
+
+The retained shared-host configuration uses TP4 / attention DP1 / EP2, DSPARK block 5, static memory fraction 0.85 and HiCache ratio 0.1. Select it explicitly after checking GPU and NUMA placement:
+
+```bash
+export HOST_PROFILE=shared
+# Example only: use the NUMA memory node for your selected GPU group.
+export NUMA_MEMORY_NODE=0
+bash examples/serve-compat-tp4.sh --dry-run
+bash examples/serve-compat-tp4.sh
+```
+
+This profile caps container memory at 224 GiB with no swap and sets a 16 CPU quota. A Python entrypoint disables transparent huge pages for the serving process tree and verifies that setting before executing `sglang serve`; it does not modify the host-wide THP policy. `NUMA_MEMORY_NODE` must be explicit. `HICACHE_RATIO` accepts positive decimals, including `0.1`. Dedicated mode keeps its existing resource behavior and ratio 2. An explicit cache-ratio override is allowed, but other values are not covered by the shared-host qualification.
+
+The launcher does not reserve GPUs from a cluster scheduler or supervise host memory. Before starting, arrange exclusive GPU ownership, leave room for the OS and other services, and use a site-specific supervisor if needed. The measured deployment required at least 232 GiB available host memory before startup and stopped its test instance below 8 GiB available; those operational guards are not implemented by this standalone launcher.
+
+The [preliminary topology comparison](compat/topology-comparison-20261103.json) used the published `ghcr.io/loon-hejw/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.4` platform manifest without rebuilding. It retained this profile after comparing it with attention DP4 / EP4 and a DP LM head. The experimental configuration needed static memory fraction 0.90; it could not allocate a KV pool at 0.85. Different GPU groups, NUMA nodes and derived scheduler settings also limit causal attribution to DP alone.
+
+All 204 primary quality requests completed: 100/102 passed with the retained profile and 97/102 with the experimental profile. The same small synthetic suite used temperatures 0/1, with `high` thinking for code/reasoning. Thinking-budget exhaustion and literal tool-argument failures remain. The experimental long-context formatting failure contained correct values inside Markdown fences. These observations do not establish general quality differences.
+
+Only 18 of 48 planned performance batches completed before the experiment was deliberately ended. The completed workload was a Chinese explanation with 40 input tokens, thinking disabled, temperature/top_p 1, and 1,024 output tokens. Each configuration had separate warmups and three measured repetitions per concurrency; server order alternated, prefixes were repeated and caches were not flushed.
+
+| Concurrency | Retained DP1/EP2 output tokens/s | Experimental DP4/EP4 output tokens/s |
+| --- | --- | --- |
+| 1 | 215.69 | 124.88 |
+| 4 | 584.77 | 416.25 |
+| 8 | 813.94 | 669.46 |
+
+Values are medians of batch output tokens divided by total elapsed time, including TTFT. Token accounting includes reasoning, which was disabled and observed as zero here. Concurrent totals are not individual request rates or server decode-log throughput. C16, code-generation speed tests and the proposed low-thinking code follow-up were not completed. These controlled, short-input measurements do not necessarily represent real-world performance, long-context throughput or sustained capacity.
 
 ## API and cache behavior
 

@@ -615,5 +615,310 @@
       "test_gpu_resources_released": true
     },
     "evidence_policy": "Sanitized summaries only. Private synthetic outputs, raw token IDs, build logs and runtime receipts retained separately."
+  },
+  "literal_generation_diagnosis": {
+    "recorded_at_utc": "2026-11-03T06:17:07.023408+00:00",
+    "status": "diagnosis_complete_no_additional_framework_fix_proven",
+    "artifact": "local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.4",
+    "image_id": "sha256:bb27bdd8172e86db037840528b971fa5e2ec8d055236f49a3930d73be4ac58e7",
+    "image_source_revision": "b808761fbef06cec27ce7b3afc55c372cefa78c1",
+    "total_requests": 442,
+    "primary_literal_requests": 200,
+    "diagnostic_requests": 242,
+    "modes": {
+      "rc4_off": {
+        "results": {
+          "requests": 100,
+          "passed": 5,
+          "truncated": 0,
+          "api_errors": 0
+        },
+        "low-results": {
+          "requests": 100,
+          "passed": 17,
+          "truncated": 0,
+          "api_errors": 0
+        },
+        "variants": {
+          "requests": 16,
+          "passed": 3,
+          "truncated": 0,
+          "api_errors": 0
+        },
+        "trace-results": {
+          "requests": 2,
+          "passed": 1,
+          "truncated": 0,
+          "api_errors": 0
+        },
+        "native_requests": 3,
+        "parser_comparison": {
+          "requests": 218,
+          "argument_changes": 0,
+          "raw_tools_missing": 0,
+          "api_tools_missing": 0
+        },
+        "input_audit": {
+          "prompts": 10,
+          "all_match_official": true,
+          "official_encoder_sha256": "13231c592e958fb39e2af6001dae69d90e7a36b265702b9b390236fb387599e2"
+        },
+        "native_control": {
+          "same_captured_prompt_ids": true,
+          "tool_grammar_used": false,
+          "full_generation_has_expected_literal": false,
+          "full_generation_has_observed_wrong_literal": true,
+          "next_token_before_expected_open": "</think>",
+          "open_close_logprobs_before_expected_open": [
+            [
+              -2.207974910736084,
+              128821,
+              null
+            ],
+            [
+              -0.7079748511314392,
+              128822,
+              null
+            ]
+          ]
+        },
+        "seed": {
+          "random_seed": 834237948,
+          "enable_deterministic_inference": false,
+          "speculative_algorithm": null
+        }
+      },
+      "rc4_on": {
+        "results": {
+          "requests": 100,
+          "passed": 6,
+          "truncated": 0,
+          "api_errors": 0
+        },
+        "low-results": {
+          "requests": 100,
+          "passed": 19,
+          "truncated": 0,
+          "api_errors": 0
+        },
+        "variants": {
+          "requests": 16,
+          "passed": 4,
+          "truncated": 1,
+          "api_errors": 0
+        },
+        "trace-results": {
+          "requests": 2,
+          "passed": 0,
+          "truncated": 0,
+          "api_errors": 0
+        },
+        "native_requests": 3,
+        "parser_comparison": {
+          "requests": 218,
+          "argument_changes": 0,
+          "raw_tools_missing": 1,
+          "api_tools_missing": 1
+        },
+        "input_audit": {
+          "prompts": 10,
+          "all_match_official": true,
+          "official_encoder_sha256": "13231c592e958fb39e2af6001dae69d90e7a36b265702b9b390236fb387599e2"
+        },
+        "native_control": {
+          "same_captured_prompt_ids": true,
+          "tool_grammar_used": false,
+          "full_generation_has_expected_literal": false,
+          "full_generation_has_observed_wrong_literal": true,
+          "next_token_before_expected_open": "</think>",
+          "open_close_logprobs_before_expected_open": [
+            [
+              -2.207974910736084,
+              128821,
+              null
+            ],
+            [
+              -0.7079748511314392,
+              128822,
+              null
+            ]
+          ]
+        },
+        "seed": {
+          "random_seed": 471849331,
+          "enable_deterministic_inference": false,
+          "speculative_algorithm": "DSPARK"
+        }
+      }
+    },
+    "marker_logit_examples": [
+      {
+        "mode": "rc4_off",
+        "reasoning_effort": "none",
+        "time_ns": 1793685675300191669,
+        "row": 0,
+        "token_ids": [
+          128821,
+          128822
+        ],
+        "token_text": [
+          "<think>",
+          "</think>"
+        ],
+        "logits_before": [
+          19.375,
+          20.75
+        ],
+        "logits_after": [
+          19.375,
+          20.75
+        ],
+        "argmax_before": 128822,
+        "argmax_after": 128822
+      },
+      {
+        "mode": "rc4_on",
+        "reasoning_effort": "none",
+        "time_ns": 1793686236178015687,
+        "row": 4,
+        "token_ids": [
+          128821,
+          128822
+        ],
+        "token_text": [
+          "<think>",
+          "</think>"
+        ],
+        "logits_before": [
+          19.125,
+          20.625
+        ],
+        "logits_after": [
+          19.125,
+          20.625
+        ],
+        "argmax_before": 128822,
+        "argmax_after": 128822
+      },
+      {
+        "mode": "rc4_on",
+        "reasoning_effort": "low",
+        "time_ns": 1793686236833885563,
+        "row": 1,
+        "token_ids": [
+          128821,
+          128822
+        ],
+        "token_text": [
+          "<think>",
+          "</think>"
+        ],
+        "logits_before": [
+          19.75,
+          20.875
+        ],
+        "logits_after": [
+          19.75,
+          20.875
+        ],
+        "argmax_before": 128822,
+        "argmax_after": 128822
+      }
+    ],
+    "speculative_trace_check": {
+      "greedy_only": true,
+      "verify_steps": 164,
+      "tokens_through_first_eos": 774,
+      "buffer_slots": 781,
+      "ignored_after_eos": [
+        {
+          "step": 1027,
+          "after_eos_slots": [
+            1
+          ]
+        },
+        {
+          "step": 1779,
+          "after_eos_slots": [
+            0
+          ]
+        },
+        {
+          "step": 1813,
+          "after_eos_slots": [
+            0
+          ]
+        },
+        {
+          "step": 1832,
+          "after_eos_slots": [
+            0
+          ]
+        },
+        {
+          "step": 1848,
+          "after_eos_slots": [
+            201
+          ]
+        },
+        {
+          "step": 1865,
+          "after_eos_slots": [
+            201
+          ]
+        },
+        {
+          "step": 1884,
+          "after_eos_slots": [
+            201
+          ]
+        }
+      ],
+      "argmax_mismatches": []
+    },
+    "mask_probe": {
+      "all_mask_allowed": true,
+      "all_accepted": true,
+      "mismatches": []
+    },
+    "conclusion": "Current checkpoint/configuration assigns the wrong literal marker a higher target-model score in reproduced cases. Actual inputs match the checkpoint official encoder; valid markers remain allowed through runtime masks; native unconstrained generation reproduces the error. No evidence supports an additional transparent framework patch for this failure.",
+    "limitations": [
+      "This identifies behavior under the tested checkpoint and numerical/runtime configuration; it does not prove a weight-intrinsic limitation or equivalence with all backends and precisions.",
+      "Trace hooks are private read-only wrappers outside the immutable image. They synchronize tensors for observation; no performance conclusions use these timings.",
+      "API seeds were submitted, but deterministic inference was disabled. These are repeated observations, not matched deterministic random streams or distribution-equivalence proof.",
+      "Greedy DSPARK argmax consistency was checked only for traced C1 requests. C4 and temperature 1 have outcome checks, not equivalent complete probability traces.",
+      "One extended streaming C4 DSPARK-on request exhausted 4096 tokens inside an unclosed DSML string parameter; both raw parser and API lacked a valid call. It remains a failure.",
+      "The low-effort comparison is diagnostic only and is insufficient for an exact-preservation guarantee. No production/request defaults were changed.",
+      "No runtime change was made, so no rc.5 image or new broad CPU/GPU/quality qualification is claimed. Previous rc.4 checks remain separate evidence."
+    ],
+    "new_runtime_patch": false,
+    "new_candidate_built": false,
+    "end_to_end_literal_gate": false,
+    "runtime_grammar_probe": {
+      "scope": "Installed rc.4 CPU masks, ReasonerGrammarObject, and real speculative generate_token_bitmask traversal; no model inference",
+      "passed": 14,
+      "token_positions": 1064
+    },
+    "conditions": {
+      "gpus": "4 x NVIDIA RTX PRO 6000 Blackwell 96 GB",
+      "tensor_parallel": 4,
+      "expert_parallel": 2,
+      "temperatures": [
+        0,
+        1
+      ],
+      "concurrency": [
+        1,
+        4
+      ],
+      "streaming": [
+        false,
+        true
+      ],
+      "rounds_per_literal_combination": 5,
+      "production_changed": false,
+      "github_pushed": false,
+      "image_published": false
+    }
   }
 }

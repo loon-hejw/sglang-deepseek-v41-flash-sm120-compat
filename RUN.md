@@ -77,6 +77,8 @@ Set `INFERENCE_API_KEY` in the process environment if authentication is enabled.
 
 The profile was selected from eight small coding tasks repeated five times in each DSPARK mode. It is not a guarantee for harder tasks or immunity from token exhaustion. Tool argument parsing now preserves literal thinking markers inside V4.1 tool bodies, but the model/decoder can still generate the wrong string. Do not treat parser fidelity as proof that a tool argument is semantically correct.
 
+The coding profile is not a literal-tool preservation policy. A separate 100-request literal diagnostic per DSPARK mode using `reasoning_effort=low` passed only 17 requests with DSPARK disabled and 19 enabled. Keep exact-preservation requirements explicit in the application; this repository does not silently reconstruct arguments from prompts or enable retries that replace the original result.
+
 ### Context and cache behavior
 
 The 1M limit is per request; all requests share the device KV pool. The candidate workload comparison included inputs up to 160,054 tokens and concurrency 1/4, not full 1M stress or a capacity benchmark. See the [validation record](compat/validation.json) for the exact artifact, configuration and limitations.

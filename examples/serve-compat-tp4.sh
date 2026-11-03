@@ -22,7 +22,7 @@ if [[ $# != 0 && ! ( $# == 1 && "$1" == --dry-run ) ]]; then usage >&2; exit 2; 
 dry_run=${1:-}
 : "${MODEL_DIR:?set MODEL_DIR to the pinned DeepSeek-V4.1-Flash-1017 checkpoint}"
 : "${CACHE_DIR:?set CACHE_DIR to a version-specific persistent cache directory}"
-IMAGE=${IMAGE:-local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.3}
+IMAGE=${IMAGE:-local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.4}
 GPU_DEVICES=${GPU_DEVICES:-0,1,2,3}
 PORT=${PORT:-18001}
 SERVED_MODEL_NAME=${SERVED_MODEL_NAME:-deepseek-v4.1-flash-1017}

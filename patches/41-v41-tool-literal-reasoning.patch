@@ -1,0 +1,258 @@
+diff --git a/python/sglang/srt/parser/reasoning_parser.py b/python/sglang/srt/parser/reasoning_parser.py
+index 5b85b30..a95b8ea 100644
+--- a/python/sglang/srt/parser/reasoning_parser.py
++++ b/python/sglang/srt/parser/reasoning_parser.py
+@@ -1560,6 +1560,103 @@ class DeepSeekV41ReasoningDetector(DeepSeekV4Detector):
+     def __init__(self, **kwargs):
+         super().__init__(**kwargs)
+         self.tool_start_token = f"<{dsv4_dsml_token} calls>"
++        self._v41_tool_starts = (
++            self.tool_start_token,
++            f"<{dsv4_dsml_token} invoke ",
++        )
++        self._v41_tool_pattern = re.compile(
++            rf"<{re.escape(dsv4_dsml_token)} (?:calls>|invoke(?=\s))"
++        )
++        self._v41_pending = ""
++        self._v41_previous_char = ""
++        self._v41_in_tools = False
++        if self.continue_final_message and self.previous_content:
++            # A literal think marker in a continued tool parameter must not
++            # re-open reasoning. Scan history without emitting it again.
++            history = type(self)(
++                force_reasoning=self.force_reasoning,
++                stream_reasoning=self.stream_reasoning,
++            )
++            history._parse_streaming_increment_impl(self.previous_content)
++            self._v41_in_tools = history._v41_in_tools
++            self._v41_previous_char = self.previous_content[-1]
++            if self._v41_in_tools:
++                self._in_reasoning = False
++
++    def _parse_streaming_increment_impl(self, new_text: str) -> StreamingParseResult:
++        if self._v41_in_tools:
++            return StreamingParseResult(normal_text=new_text)
++
++        self._v41_pending += new_text
++        normal = []
++        reasoning = []
++
++        def feed_prefix(text):
++            if not text:
++                return
++            result = super(
++                DeepSeekV41ReasoningDetector, self
++            )._parse_streaming_increment_impl(text)
++            normal.append(result.normal_text)
++            reasoning.append(result.reasoning_text)
++            self._v41_previous_char = text[-1]
++
++        while match := self._v41_tool_pattern.search(self._v41_pending):
++            feed_prefix(self._v41_pending[: match.start()])
++            # While thinking, only a line-start DSML boundary closes that
++            # block. Outside thinking, preserve the tool parser's acceptance
++            # of calls immediately after prose or a closing think marker.
++            if not self._in_reasoning or self._v41_previous_char in ("", "\n"):
++                if self._in_reasoning:
++                    reasoning.append(self._strip_leading_think_start(self._buffer))
++                else:
++                    normal.append(self._buffer)
++                self._buffer = ""
++                self._in_reasoning = False
++                self._v41_in_tools = True
++                normal.append(self._v41_pending[match.start() :])
++                self._v41_pending = ""
++                return StreamingParseResult(
++                    normal_text="".join(normal), reasoning_text="".join(reasoning)
++                )
++            # A mid-sentence mention inside reasoning is not a tool call.
++            feed_prefix(match.group())
++            self._v41_pending = self._v41_pending[match.end() :]
++
++        # Hold only the suffix that could become a tool boundary. This must
++        # happen before the shared parser sees literal think tags in a tool
++        # body, including when the boundary and body arrive in one chunk.
++        holdback = max(
++            self._ends_with_partial_token(self._v41_pending, token)
++            for token in self._v41_tool_starts
++        )
++        size = len(self._v41_pending) - holdback
++        feed_prefix(self._v41_pending[:size])
++        self._v41_pending = self._v41_pending[size:]
++        return StreamingParseResult(
++            normal_text="".join(normal), reasoning_text="".join(reasoning)
++        )
++
++    def finish(self) -> StreamingParseResult:
++        result = StreamingParseResult()
++        if self._v41_pending:
++            result = super()._parse_streaming_increment_impl(self._v41_pending)
++            self._v41_pending = ""
++        tail = super().finish()
++        return StreamingParseResult(
++            normal_text=result.normal_text + tail.normal_text,
++            reasoning_text=result.reasoning_text + tail.reasoning_text,
++        )
++
++    def _detect_and_parse_impl(self, text: str) -> StreamingParseResult:
++        # Use the same boundary ordering as streaming: a literal </think>
++        # inside a tool parameter cannot close the earlier reasoning block.
++        result = self._parse_streaming_increment_impl(text)
++        tail = self.finish()
++        return StreamingParseResult(
++            normal_text=result.normal_text + tail.normal_text,
++            reasoning_text=result.reasoning_text + tail.reasoning_text,
++        )
+ 
+ 
+ class _MimoDetector(Qwen3Detector):
+diff --git a/test/registered/unit/compat_0731/test_compat.py b/test/registered/unit/compat_0731/test_compat.py
+index ee83b1a..ef8d99f 100644
+--- a/test/registered/unit/compat_0731/test_compat.py
++++ b/test/registered/unit/compat_0731/test_compat.py
+@@ -233,6 +233,78 @@ def test_incomplete_plain_suffix_not_lost(reasoning):
+     assert ''.join(r.normal_text for r in out)=="literal <th"
+ 
+ 
++@pytest.fixture(scope="module")
++def v41_reasoning():
++    ns = dict(dsv4_thinking_start_token="<think>", dsv4_thinking_end_token="</think>",
++              dsv4_dsml_token="｜DSML｜", dsv4_eos_token="<｜end▁of▁sentence｜>")
++    return load("python/sglang/srt/parser/reasoning_parser.py", ["StreamingParseResult",
++        "BaseReasoningFormatDetector", "DeepSeekV4Detector", "DeepSeekV41ReasoningDetector"], ns)["DeepSeekV41ReasoningDetector"]
++
++
++def literal_call(value, bare=False):
++    invoke = '<｜DSML｜ invoke name="probe"><｜DSML｜ parameter name="text" string="true">'+value+'</｜DSML｜ parameter></｜DSML｜ invoke>'
++    return invoke if bare else '<｜DSML｜ calls>'+invoke+'</｜DSML｜ calls>'
++
++
++@pytest.mark.parametrize("value", ["<think>literal</think>", "<think>", "</think>", "<th",
++    '中文 "引号"\n<think>一</think>\t<think>二</think>', "before </thi"])
++@pytest.mark.parametrize("prefix,forced,want_reason,want_prose", [
++    ("", False, "", ""), ("summary\n\n", False, "", "summary\n\n"),
++    ("<think>reason</think>\n\n", False, "reason", "\n\n"),
++    ("reason\n\n", True, "reason\n\n", ""),
++    ("<think>mention <｜DSML｜ calls> here</think>\n\n", False, "mention <｜DSML｜ calls> here", "\n\n"),
++    ("<think>reason</think>", False, "reason", "")])
++@pytest.mark.parametrize("stream_reasoning", [True, False])
++@pytest.mark.parametrize("bare", [False, True])
++def test_v41_literal_tool_pipeline(v41_reasoning, detectors, value, prefix, forced, want_reason, want_prose, stream_reasoning, bare):
++    raw = literal_call(value, bare)
++    text = prefix + raw
++    tools = [NS(function=NS(name="probe"))]
++    for size in [1, 2, 3, 7, len(text)]:
++        parser = v41_reasoning(force_reasoning=forced, stream_reasoning=stream_reasoning)
++        result = [parser.parse_streaming_increment(text[i:i+size]) for i in range(0,len(text),size)] + [parser.finish()]
++        assert ''.join(r.reasoning_text for r in result) == want_reason
++        assert ''.join(r.normal_text for r in result) == want_prose + raw
++        tool_parser = detectors['DeepSeekV41Detector']()
++        calls = [c for r in result for c in tool_parser.parse_streaming_increment(r.normal_text, tools).calls]
++        calls += tool_parser.finish(tools).calls
++        assert len(calls) == 1
++        assert json.loads(calls[0].parameters) == {"text": value}
++    result = v41_reasoning(force_reasoning=forced, stream_reasoning=stream_reasoning).detect_and_parse(text)
++    assert (result.reasoning_text, result.normal_text) == (want_reason, want_prose + raw)
++    calls = detectors['DeepSeekV41Detector']().detect_and_parse(result.normal_text,tools).calls
++    assert len(calls) == 1 and json.loads(calls[0].parameters) == {"text": value}
++
++
++@pytest.mark.parametrize("stream_reasoning", [True,False])
++def test_v41_every_single_split_and_tool_continuation(v41_reasoning, stream_reasoning):
++    raw = literal_call('中文 <think>literal</think>')
++    text = '<think>reason</think>\n\n'+raw
++    for index in range(len(text)+1):
++        parser = v41_reasoning(stream_reasoning=stream_reasoning)
++        out = [parser.parse_streaming_increment(text[:index]),parser.parse_streaming_increment(text[index:]),parser.finish()]
++        assert ''.join(r.reasoning_text for r in out)=='reason'
++        assert ''.join(r.normal_text for r in out)=='\n\n'+raw
++    for prefix in ['', '<think>reason</think>\n\n']:
++        previous = prefix + raw[:raw.index('literal')]
++        tail = raw[raw.index('literal'):]
++        parser = v41_reasoning(continue_final_message=True,previous_content=previous,stream_reasoning=stream_reasoning)
++        out = [parser.parse_streaming_increment(c) for c in tail]+[parser.finish()]
++        assert ''.join(r.reasoning_text for r in out)==''
++        assert ''.join(r.normal_text for r in out)==tail
++
++
++def test_v41_truncated_tools_remain_unexecutable(v41_reasoning, detectors):
++    raw = '<｜DSML｜ calls><｜DSML｜ invoke name="probe"><｜DSML｜ parameter name="text" string="true"><think>literal</think>'
++    parser=v41_reasoning();out=[parser.parse_streaming_increment(c) for c in raw]+[parser.finish()]
++    assert ''.join(r.normal_text for r in out)==raw
++    assert ''.join(r.reasoning_text for r in out)==''
++    tool_parser=detectors['DeepSeekV41Detector']();tools=[NS(function=NS(name='probe'))]
++    assert not tool_parser.detect_and_parse(raw,tools).calls
++    assert not [c for r in out for c in tool_parser.parse_streaming_increment(r.normal_text,tools).calls]
++    assert not tool_parser.finish(tools).calls
++
++
+ @pytest.fixture(scope="module")
+ def detectors():
+     from partial_json_parser import loads as partial_loads
+diff --git a/test/registered/unit/function_call/test_deepseekv41_detector.py b/test/registered/unit/function_call/test_deepseekv41_detector.py
+index a7a960d..4193c6c 100644
+--- a/test/registered/unit/function_call/test_deepseekv41_detector.py
++++ b/test/registered/unit/function_call/test_deepseekv41_detector.py
+@@ -147,6 +147,35 @@ class TestDeepSeekV41RoundTrip(CustomTestCase):
+                 self.assertEqual(_assemble(calls), self.expected)
+ 
+ 
++class TestDeepSeekV41LiteralThinkRoundTrip(TestDeepSeekV41RoundTrip):
++    """Exercise the installed ReasoningParser -> FunctionCallParser pipeline."""
++
++    def test_literals_without_a_leading_thinking_block(self):
++        for value in ("<think>literal</think>", "<think>", "</think>", '中文 "引号"\n<think>一</think>'):
++            completion = self.completion[self.completion.index(f"<{DSML} calls>") :]
++            completion = completion.replace(self.ARGUMENTS["query"], value)
++            expected = [("lookup", {**self.ARGUMENTS, "query": value})]
++            with self.subTest(value=value, mode="nonstream"):
++                reason, text = ReasoningParser("deepseek-v41", force_reasoning=False).parse_non_stream(completion)
++                self.assertFalse(reason)
++                _, calls = FunctionCallParser(self.tools, "deepseekv41").parse_non_stream(text)
++                self.assertEqual([(c.name, json.loads(c.parameters)) for c in calls], expected)
++            for size in CHUNK_SIZES:
++                with self.subTest(value=value, chunk_size=size):
++                    reasoning = ReasoningParser("deepseek-v41", force_reasoning=False)
++                    tools = FunctionCallParser(self.tools, "deepseekv41")
++                    results = [reasoning.parse_stream_chunk(completion[i:i+size]) for i in range(0,len(completion),size)]
++                    results.append(reasoning.parse_stream_end())
++                    self.assertFalse("".join(reason or "" for reason, _ in results))
++                    calls = []
++                    for _, text in results:
++                        _, delta = tools.parse_stream_chunk(text or "")
++                        calls.extend(delta)
++                    _, delta = tools.parse_stream_end()
++                    calls.extend(delta)
++                    self.assertEqual(_assemble(calls), expected)
++
++
+ class TestDeepSeekV41ConstrainedDecoding(CustomTestCase):
+     """A forced call must open the calls block before the first invoke; the
+     per-tool legacy tag started the grammar at the invoke trigger, the model
+diff --git a/test/registered/unit/parser/test_reasoning_parser.py b/test/registered/unit/parser/test_reasoning_parser.py
+index 93f81a5..886bf5e 100644
+--- a/test/registered/unit/parser/test_reasoning_parser.py
++++ b/test/registered/unit/parser/test_reasoning_parser.py
+@@ -1159,8 +1159,8 @@ class TestStreamingChunkSizeInvariance(CustomTestCase):
+                     )
+ 
+     def test_text_before_think_token_is_chunk_dependent(self):
+-        """Accepted divergence, inherited from main: text before `<think>` lands
+-        in reasoning or content depending on where the chunk boundary falls."""
++        """Leading prose still depends on chunk boundaries, but compatibility
++        prefix holdback must prevent a split think marker leaking as content."""
+         text = "lead<think>r</think>tail"
+         variants = {
+             self._feed(Qwen3Detector(), text, chunk_size)
+@@ -1169,9 +1169,9 @@ class TestStreamingChunkSizeInvariance(CustomTestCase):
+ 
+         self.assertEqual(
+             variants,
+-            {("r", "leadtail"), ("", text), ("leadr", "tail")},
++            {("r", "leadtail"), ("leadr", "tail")},
+         )
+-        # And the non-streaming path produces yet a fourth split.
++        # The non-streaming path retains its separate leading-prose behavior.
+         one_shot = Qwen3Detector().detect_and_parse(text)
+         self.assertEqual(
+             (one_shot.reasoning_text, one_shot.normal_text), ("lead<think>r", "tail")

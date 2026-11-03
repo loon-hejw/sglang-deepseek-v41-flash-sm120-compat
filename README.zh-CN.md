@@ -2,7 +2,7 @@
 
 基于 [ormandj 的 V4.1 项目](https://github.com/ormandj/sglang-deepseek-v41-flash-sm120)，保留锁定的 SM120 优化和依赖栈，迁入 [0731 项目](https://github.com/ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000) 中适用的正确性修复，提供已经完成四卡部署验收的通用启动配方。
 
-**本仓库发布源码、配置与验证摘要，尚未发布可公开拉取的兼容镜像或稳定版 Release。** 本地镜像完整名称为 `local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.3`。原版 `ghcr.io/ormandj/sglang-deepseek-v41-flash-sm120:v0.4.3` 不包含本项目新增的兼容修复。镜像构建输入及已验收版本保持不变。
+**本仓库发布源码、配置与验证摘要，尚未发布可公开拉取的兼容镜像或稳定版 Release。** 当前本地构建候选镜像为 `local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.4`。原版 `ghcr.io/ormandj/sglang-deepseek-v41-flash-sm120:v0.4.3` 不包含本项目新增的兼容修复。新候选新增工具参数字面量保护，独立验收结果见验证记录。
 
 ## 致谢与项目来源
 
@@ -15,7 +15,7 @@
 
 ## 修复内容与来源
 
-[迁移清单](compat/migration.json) 对旧项目 33 项补丁逐一给出来源、哈希和处理结果：7 项迁移、22 项已有等效实现、4 项不适用。最终 SGLang 系列共 40 个补丁，包括 7 个新增运行时修复及 1 个 CPU 测试补丁；FlashInfer、DeepGEMM、Triton 的锁定版本保留。
+[迁移清单](compat/migration.json) 对旧项目 33 项补丁逐一给出来源、哈希和处理结果：7 项迁移、22 项已有等效实现、4 项不适用。当前 SGLang 系列共 41 个补丁，包含原有兼容迁移及新增的 V4.1 工具参数字面量保护；FlashInfer、DeepGEMM、Triton 的锁定版本保留。
 
 - DSPARK/DFLASH 正确应用加性和重复惩罚，并按已提交输出累计 token 历史，覆盖批次复用、过滤与合并。
 - 工具调用结束时补全所有调用的剩余参数，避免重复收尾及最终名称分片造成的参数遗漏。
@@ -40,7 +40,7 @@ hf download deepseek-ai/DeepSeek-V4.1-Flash-1017 \
   --local-dir /srv/models/DeepSeek-V4.1-Flash-1017
 
 export MODEL_DIR=/srv/models/DeepSeek-V4.1-Flash-1017
-export CACHE_DIR=/srv/cache/sglang-deepseek-v41-compat-v0.4.4-rc.3-tp4
+export CACHE_DIR=/srv/cache/sglang-deepseek-v41-compat-v0.4.4-rc.4-tp4
 export GPU_DEVICES=0,1,2,3
 # 在当前运行环境中设置 API_KEY 可启用鉴权，不要提交真实密钥。
 bash examples/serve-compat-tp4.sh --dry-run

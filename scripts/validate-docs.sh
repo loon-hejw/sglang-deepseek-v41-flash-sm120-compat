@@ -23,7 +23,7 @@ for name in README.md README.zh-CN.md RUN.md; do
   require_text "$repo/$name" "$model"
   require_text "$repo/$name" "$revision"
   require_text "$repo/$name" 'examples/serve-compat-tp4.sh'
-  require_text "$repo/$name" '/srv/cache/sglang-deepseek-v41-compat-v0.4.4-rc.3-tp4'
+  require_text "$repo/$name" "/srv/cache/sglang-deepseek-v41-compat-${tag}-tp4"
   require_text "$repo/$name" "$upstream_image"
 done
 require_text "$repo/README.md" 'does not currently publish a downloadable container image'

@@ -1,14 +1,14 @@
 # Running the validated compatibility TP4 profile
 
-Use `deepseek-ai/DeepSeek-V4.1-Flash-1017` at revision `1bae0e1088993b9b82de08f59de5be5a34e42170`. Build `local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.3` as described in [BUILDING.md](BUILDING.md); this repository does not publish a pullable fork image yet.
+Use `deepseek-ai/DeepSeek-V4.1-Flash-1017` at revision `1bae0e1088993b9b82de08f59de5be5a34e42170`. Build `local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.4` as described in [BUILDING.md](BUILDING.md); this repository does not publish a pullable fork image yet.
 
 ## Launch and lifecycle
 
 ```bash
 export MODEL_DIR=/srv/models/DeepSeek-V4.1-Flash-1017
-export CACHE_DIR=/srv/cache/sglang-deepseek-v41-compat-v0.4.4-rc.3-tp4
+export CACHE_DIR=/srv/cache/sglang-deepseek-v41-compat-v0.4.4-rc.4-tp4
 export GPU_DEVICES=0,1,2,3
-export IMAGE=local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.3
+export IMAGE=local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.4
 # Supply API_KEY in your environment if authentication is required.
 bash examples/serve-compat-tp4.sh --dry-run
 bash examples/serve-compat-tp4.sh
@@ -33,7 +33,7 @@ Restart a stopped container with its saved configuration using `docker start dee
 | --- | --- |
 | `MODEL_DIR` | Required, checkpoint directory; mounted read-only |
 | `CACHE_DIR` | Required, version-specific persistent directory mounted at `/root/.cache` |
-| `IMAGE` | `local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.3` |
+| `IMAGE` | `local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.4` |
 | `GPU_DEVICES` | `0,1,2,3`; exactly four GPU indices or full GPU UUIDs |
 | `PORT` | `18001`, mapped to container port 8000 |
 | `CONTAINER_NAME` | `deepseek-v41-flash-sm120-compat-tp4` |

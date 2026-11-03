@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "lineage": "dsv41-platform",
-  "candidate_tag": "v0.4.4-rc.3",
+  "candidate_tag": "v0.4.4-rc.4",
   "platform": "linux/amd64",
   "base": {
     "tag": "docker.io/lmsysorg/sglang:nightly-dev-cu13-20261019-3c560089",
@@ -27,7 +27,7 @@
       "ref": "refs/heads/main",
       "commit": "62cee1b15c22350b17a9256fc6ad5777feb2ec70",
       "tree": "8216c915fb861ca391b395c86e5ced1ce85c91cf",
-      "effective_tree": "0efe6756c7652d1dda1e28c9fcacb0758fa70c0c"
+      "effective_tree": "5281c8e0c7c84d00ce1b14adc9eec8333ce02fcb"
     },
     "triton": {
       "repository": "https://github.com/triton-lang/triton.git",
@@ -707,6 +707,24 @@
         "test/registered/unit/compat_0731/test_compat.py"
       ],
       "origins": []
+    },
+    {
+      "id": "v41-tool-literal-reasoning",
+      "kind": "branch",
+      "branch": "rebased/v41-tool-literal-reasoning",
+      "upstream_pr": "pending",
+      "reason": "Local V4.1 parser correctness fix; synthetic valid DSML reproduced literal parameter corruption before this change.",
+      "base": "64bd77ce9f219948e14f23bf90cb3da45b933852",
+      "head": "58b270bd2e8b8dbc89c0c14b9960ff5bf55eaed2",
+      "applied": "clean",
+      "path": "patches/41-v41-tool-literal-reasoning.patch",
+      "sha256": "e91bafe239929cdc62126bb9f48918f1ff157f3693e81ff27c1ee07c34025fcf",
+      "purpose": "Preserve literal think markers in V4.1 tool parameters with chunk-invariant reasoning/tool boundaries",
+      "cpu_tests": [
+        "test/registered/unit/parser/test_reasoning_parser.py",
+        "test/registered/unit/function_call/test_deepseekv41_detector.py",
+        "test/registered/unit/compat_0731/test_compat.py"
+      ]
     }
   ],
   "packaging": {

@@ -74,13 +74,13 @@
           "path": "python/sglang/srt/parser/reasoning_parser.py",
           "anchor": "holdback = max(",
           "line": 280,
-          "file_sha256": "92244bed488df33b157fea04aee2730bd56b0054d076f0f7ed4ce791ff002b32"
+          "file_sha256": "3b6d9fc1fa3b78c73098003ee150306d5d19c6bf23047b086c4a1fc49c260a62"
         },
         {
           "path": "python/sglang/srt/parser/reasoning_parser.py",
           "anchor": "normal_text=current_text[: len(current_text) - holdback]",
           "line": 299,
-          "file_sha256": "92244bed488df33b157fea04aee2730bd56b0054d076f0f7ed4ce791ff002b32"
+          "file_sha256": "3b6d9fc1fa3b78c73098003ee150306d5d19c6bf23047b086c4a1fc49c260a62"
         }
       ],
       "gpu_validation": "not_run"

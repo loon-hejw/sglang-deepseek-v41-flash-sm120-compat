@@ -1,6 +1,6 @@
 # Building and publishing this compatibility fork
 
-This repository currently publishes source, the TP4 launcher and validation summaries. It does not publish a public fork container image or stable GitHub Release. The qualified private artifact is `local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.3`; a local rebuild is a separate artifact and must be qualified separately.
+This repository currently publishes source, the TP4 launcher and validation summaries. It does not publish a public fork container image or stable GitHub Release. The current build target is `local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.4`. The previously qualified private artifact is `local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.3`; a local rebuild is a separate artifact and must be qualified separately.
 
 ## Local build
 

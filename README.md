@@ -13,7 +13,7 @@ This fork's contributions are the V4.1 compatibility adaptations, regression tes
 
 ## Published scope
 
-This repository publishes source, configuration and validation summaries. **It does not currently publish a downloadable container image or a stable fork release.** Build the local candidate `local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.3`, or set `IMAGE` to a compatible image you have already obtained. The upstream stable image `ghcr.io/ormandj/sglang-deepseek-v41-flash-sm120:v0.4.3` does not include this fork's compatibility fixes.
+This repository publishes source, configuration and validation summaries. **It does not currently publish a downloadable container image or a stable fork release.** Build the local candidate `local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.4`, or set `IMAGE` to a compatible image you have already obtained. The upstream stable image `ghcr.io/ormandj/sglang-deepseek-v41-flash-sm120:v0.4.3` does not include this fork's compatibility fixes.
 
 | Item | Profile |
 | --- | --- |
@@ -40,7 +40,7 @@ hf download deepseek-ai/DeepSeek-V4.1-Flash-1017 \
   --local-dir /srv/models/DeepSeek-V4.1-Flash-1017
 
 export MODEL_DIR=/srv/models/DeepSeek-V4.1-Flash-1017
-export CACHE_DIR=/srv/cache/sglang-deepseek-v41-compat-v0.4.4-rc.3-tp4
+export CACHE_DIR=/srv/cache/sglang-deepseek-v41-compat-v0.4.4-rc.4-tp4
 export GPU_DEVICES=0,1,2,3
 # Set API_KEY in your environment to require bearer authentication.
 bash examples/serve-compat-tp4.sh --dry-run
@@ -112,6 +112,8 @@ SGLang series, applied in order to the pinned SGLang commit:
 | 38 | `38-compat-deepgemm-warmup-budget.patch` | [Ombori 0731](https://github.com/ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000) compatibility port; see [migration audit](compat/migration.json) | Skip DeepGEMM warmup when no supported shape fits available memory |
 | 39 | `39-compat-draft-sentinel.patch` | [Ombori 0731](https://github.com/ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000) compatibility port; see [migration audit](compat/migration.json) | Keep degenerate Markov greedy draft rows within vocabulary bounds |
 | 40 | `40-compat-cpu-regressions.patch` | Local regression tests for migrated fixes; see [migration audit](compat/migration.json) | CPU regression coverage for migrated behavior and retained V4.1 DSML parsing |
+
+| 41 | `41-v41-tool-literal-reasoning.patch` | Local V4.1 parser regression fix | Preserve literal think markers inside tool parameters across streaming boundaries and non-streaming parsing |
 
 FlashInfer series, applied to the pinned FlashInfer commit:
 

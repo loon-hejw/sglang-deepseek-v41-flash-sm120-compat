@@ -1,14 +1,17 @@
 # Running the validated compatibility TP4 profile
 
-Use `deepseek-ai/DeepSeek-V4.1-Flash-1017` at revision `1bae0e1088993b9b82de08f59de5be5a34e42170`. Build `local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.4` as described in [BUILDING.md](BUILDING.md); this repository does not publish a pullable fork image yet.
+Use `deepseek-ai/DeepSeek-V4.1-Flash-1017` at revision `1bae0e1088993b9b82de08f59de5be5a34e42170`. Pull the Linux amd64 candidate `ghcr.io/loon-hejw/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.4`, or build `local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.4` as described in [BUILDING.md](BUILDING.md). The published manifest digest is `sha256:0a32f40290db16a139ee2ac38ec4a8641b7310de07b79a249dd1c11d46a48a92`; see [compat/publication.json](compat/publication.json) for artifact identity and [compat/validation.json](compat/validation.json) for known limits. This candidate does not guarantee literal preservation in generated tool arguments.
 
 ## Launch and lifecycle
+
+The GHCR package is currently private. Run `docker login ghcr.io` using an account with package read access before pulling; anonymous pulls are not available yet.
 
 ```bash
 export MODEL_DIR=/srv/models/DeepSeek-V4.1-Flash-1017
 export CACHE_DIR=/srv/cache/sglang-deepseek-v41-compat-v0.4.4-rc.4-tp4
 export GPU_DEVICES=0,1,2,3
-export IMAGE=local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.4
+export IMAGE=ghcr.io/loon-hejw/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.4
+docker pull --platform linux/amd64 "$IMAGE"
 # Supply API_KEY in your environment if authentication is required.
 bash examples/serve-compat-tp4.sh --dry-run
 bash examples/serve-compat-tp4.sh

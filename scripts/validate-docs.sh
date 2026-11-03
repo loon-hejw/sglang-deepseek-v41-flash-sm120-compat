@@ -26,7 +26,17 @@ for name in README.md README.zh-CN.md RUN.md; do
   require_text "$repo/$name" "/srv/cache/sglang-deepseek-v41-compat-${tag}-tp4"
   require_text "$repo/$name" "$upstream_image"
 done
-require_text "$repo/README.md" 'does not currently publish a downloadable container image'
+if [[ -f "$repo/compat/publication.json" ]]; then
+  registry_image=$(jq -er '.target' "$repo/compat/publication.json")
+  registry_digest=$(jq -er '.manifest_digest' "$repo/compat/publication.json")
+  for name in README.md README.zh-CN.md RUN.md BUILDING.md; do
+    require_text "$repo/$name" "$registry_image"
+    require_text "$repo/$name" "$registry_digest"
+    require_text "$repo/$name" 'compat/publication.json'
+  done
+else
+  require_text "$repo/README.md" 'does not currently publish a downloadable container image'
+fi
 require_text "$repo/README.md" 'not a throughput benchmark or proof of complete sampling equivalence'
 require_text "$repo/README.md" 'https://github.com/loon-hejw/sglang-deepseek-v41-flash-sm120-compat.git'
 grep -Fx "IMAGE=\${IMAGE:-${image}}" "$launcher" >/dev/null
@@ -47,6 +57,8 @@ import re
 import sys
 root = Path(sys.argv[1])
 files = list(root.glob('*.md')) + list((root/'examples').glob('*.sh')) + [root/'compat/validation.json']
+if (root/'compat/publication.json').exists():
+    files.append(root/'compat/publication.json')
 patterns = [r'10\.216\.', r'harbor\.bhidi\.com', r'/Users/', r'~/git/',
             r'home\.[a-z0-9.-]+\.(?:com|net|org)', r'\u2014',
             r'gh[pousr]_[A-Za-z0-9]{20,}', r'github_pat_[A-Za-z0-9_]{20,}',

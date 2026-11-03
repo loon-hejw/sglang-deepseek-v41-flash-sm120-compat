@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "status": "candidate",
+  "target": "ghcr.io/loon-hejw/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.4",
+  "platform": "linux/amd64",
+  "manifest_digest": "sha256:0a32f40290db16a139ee2ac38ec4a8641b7310de07b79a249dd1c11d46a48a92",
+  "config_digest": "sha256:0fd4049bbace8ff11aa2951116b130c82dd548ff7861712332360d6d43e2ddff",
+  "source_revision": "b808761fbef06cec27ce7b3afc55c372cefa78c1",
+  "original_tested_local_index": "sha256:bb27bdd8172e86db037840528b971fa5e2ec8d055236f49a3930d73be4ac58e7",
+  "published_at": "2026-11-03T06:41:12.506026+00:00",
+  "rebuilt": false,
+  "runtime_manifest_and_config_byte_identical": true,
+  "layers_verified": 79,
+  "publication_format": "The tested linux/amd64 runtime manifest was uploaded unchanged. The enclosing local OCI index and build attestation were not published.",
+  "visibility": "private",
+  "anonymous_pull_verified": false,
+  "stable_promotion": false,
+  "production_replaced": false,
+  "qualification_record": "compat/validation.json",
+  "limitations": [
+    "End-to-end literal generation in tool arguments remains unreliable.",
+    "The recorded tests do not establish full sampling equivalence, a throughput improvement, full 1M-context capacity, TP8 qualification or broad coding quality."
+  ]
+}

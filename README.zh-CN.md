@@ -2,7 +2,7 @@
 
 基于 [ormandj 的 V4.1 项目](https://github.com/ormandj/sglang-deepseek-v41-flash-sm120)，保留锁定的 SM120 优化和依赖栈，迁入 [0731 项目](https://github.com/ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000) 中适用的正确性修复，提供已经完成四卡部署验收的通用启动配方。
 
-**本仓库发布源码、配置与验证摘要，尚未发布可公开拉取的兼容镜像或稳定版 Release。** 当前本地构建候选镜像为 `local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.4`。原版 `ghcr.io/ormandj/sglang-deepseek-v41-flash-sm120:v0.4.3` 不包含本项目新增的兼容修复。新候选新增工具参数字面量保护，独立验收结果见验证记录。
+本仓库发布源码、配置、验证摘要和 Linux amd64 候选镜像 `ghcr.io/loon-hejw/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.4`。**这是候选版，尚未发布稳定版；端到端字面量生成仍不可靠。** 仓库清单摘要为 `sha256:0a32f40290db16a139ee2ac38ec4a8641b7310de07b79a249dd1c11d46a48a92`，详见[发布回执](compat/publication.json)。原版 `ghcr.io/ormandj/sglang-deepseek-v41-flash-sm120:v0.4.3` 不包含本项目新增的兼容修复。
 
 ## 致谢与项目来源
 
@@ -27,14 +27,17 @@
 
 完整源码版本、补丁哈希及最终源码树由 [锁文件](stack.lock.json) 记录。保留上游历史、作者署名和许可证；旧补丁原文及许可证在 `compat/upstream-0731/`，仅作来源记录。不会恢复旧版 C4 布局、prefix-affinity 新功能，也不套用旧版 DP4、256 并发或 gamma=7 配方。
 
-## 构建与启动
+## 拉取与启动
 
 需要 Linux amd64 Docker 主机、四张 96 GB RTX PRO 6000 Blackwell GPU，以及可用的 GPU P2P。已验证主机为双路 Xeon Platinum 8480+、503 GiB 内存、驱动 610.43.02，单卡功率上限 600 W。Engram 表约需 189 GiB 主机内存，此外还需 HiCache、运行时和系统内存。模型约占 480 GiB 磁盘，镜像构建还需额外空间。
+
+GHCR 镜像当前为私有，需要先通过 `docker login ghcr.io` 登录具有该软件包读取权限的账号；尚未开放匿名拉取。
 
 ```bash
 git clone https://github.com/loon-hejw/sglang-deepseek-v41-flash-sm120-compat.git
 cd sglang-deepseek-v41-flash-sm120-compat
-bash scripts/build-compat.sh
+export IMAGE=ghcr.io/loon-hejw/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.4
+docker pull --platform linux/amd64 "$IMAGE"
 hf download deepseek-ai/DeepSeek-V4.1-Flash-1017 \
   --revision 1bae0e1088993b9b82de08f59de5be5a34e42170 \
   --local-dir /srv/models/DeepSeek-V4.1-Flash-1017
@@ -47,7 +50,7 @@ bash examples/serve-compat-tp4.sh --dry-run
 bash examples/serve-compat-tp4.sh
 ```
 
-构建命令只在本地构建镜像，不启动服务或推送镜像。首次构建需要下载锁定依赖，资源及网络选项见 [构建说明](BUILDING.md)。也可通过 `IMAGE` 指定已经获取的兼容镜像。
+如需自行构建 `local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.4`，按[构建说明](BUILDING.md)执行，并将 `IMAGE` 改为该本地镜像。模型权重单独下载，不包含在镜像中。
 
 启动脚本只向容器暴露指定的四张卡，可用四个索引或完整 GPU UUID。模型只读挂载，缓存持久化；容器后台运行、退出后保留，重启策略为 `no`。`--dry-run` 不创建目录或调用 Docker，输出隐藏 API Key。默认宿主端口 `18001`，模型名 `deepseek-v4.1-flash-1017`，通过 OpenAI `/v1/chat/completions` 调用。容器已存在时不会被覆盖；停止后可用 `docker start deepseek-v41-flash-sm120-compat-tp4` 复用原配置启动。
 
@@ -69,7 +72,7 @@ bash examples/serve-compat-tp4.sh
 
 ## 验收证据与边界
 
-2026-11-03 验证的是独立构建的 `local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.4`，镜像身份为 `sha256:bb27bdd8172e86db037840528b971fa5e2ec8d055236f49a3930d73be4ac58e7`，构建源码为 `b808761fbef06cec27ce7b3afc55c372cefa78c1`。同标签的本地重新构建是另一份产物，不能自动沿用结论。
+2026-11-03 验证的是独立构建的 `local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.4`，本地 OCI 索引身份为 `sha256:bb27bdd8172e86db037840528b971fa5e2ec8d055236f49a3930d73be4ac58e7`，构建源码为 `b808761fbef06cec27ce7b3afc55c372cefa78c1`。发布时直接复用其 Linux amd64 运行清单、配置及全部 79 个层，逐字节一致，没有重新构建。仓库摘要对应平台清单；本地索引还包含本次未发布的构建证明，因此二者摘要不同。同标签的本地重新构建是另一份产物，不能自动沿用结论。
 
 - 镜像内 CPU：1,198 项及 691 个子测试通过，1 项 CUDA 专用 compact-verify 测试跳过。
 - 原生 GPU：实际安装的 Triton Markov combine 与 CUDA Graph replay，8 项通过、0 跳过；这是独立套件，不等于补跑上述跳过项。
@@ -81,7 +84,7 @@ bash examples/serve-compat-tp4.sh
 | `rc4_on` | 100/102 | 6/100 |
 | `rc4_off` | 100/102 | 3/100 |
 
-主质量集是 51 道有效题 × 温度 0/1；工具字面量专项覆盖流式/非流式、并发 1/4，每组合 5 轮。失败另做复测，不替换原始得分。`rc4_on` 和 `rc4_off` 两种模式下，API 工具参数均保持原始生成参数，但生成序列本身仍会写错字面量，因此端到端问题尚未全面解决。候选未用于替换生产，也未发布镜像。
+主质量集是 51 道有效题 × 温度 0/1；工具字面量专项覆盖流式/非流式、并发 1/4，每组合 5 轮。失败另做复测，不替换原始得分。`rc4_on` 和 `rc4_off` 两种模式下，API 工具参数均保持原始生成参数，但生成序列本身仍会写错字面量，因此端到端问题尚未全面解决。本次发布未替换生产服务。
 
 随后对同一候选进行了 442 次专项诊断请求，观察钩子仅挂载在镜像外。20 条实际输入与权重附带的官方编码器逐 token 一致；复现失败位置在语法掩码之前，目标模型就给错误的 `</think>` 更高分数，掩码没有改变这两个标记的分数。移除工具语法的原生生成也复现了错误。此次原始专项在 DSPARK 关闭/开启时分别通过 5/100、6/100；显式 `reasoning_effort=low` 诊断仅通过 17/100、19/100，不能保证字面量保留。未发现足以支持额外运行时修复的缺陷，因此没有新增补丁、镜像或默认参数变更。结论限于当前权重和数值配置，不代表所有后端或精度。
 

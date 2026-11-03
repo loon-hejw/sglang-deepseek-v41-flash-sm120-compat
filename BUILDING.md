@@ -1,6 +1,8 @@
 # Building and publishing this compatibility fork
 
-This repository currently publishes source, the TP4 launcher and validation summaries. It does not publish a public fork container image or stable GitHub Release. The current build target is `local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.4`. The previously qualified private artifact is `local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.3`; a local rebuild is a separate artifact and must be qualified separately.
+This repository publishes source, the TP4 launcher, validation summaries and the Linux amd64 candidate `ghcr.io/loon-hejw/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.4`. It has not been promoted to a stable fork release. The current local build target is `local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.4`; a local rebuild is a separate artifact and must be qualified separately.
+
+The published manifest is `sha256:0a32f40290db16a139ee2ac38ec4a8641b7310de07b79a249dd1c11d46a48a92`, built from source commit `b808761fbef06cec27ce7b3afc55c372cefa78c1`. Publication uploaded the already tested Linux amd64 runtime manifest, configuration and 79 layers unchanged. The enclosing local OCI index also contained a build attestation, which was omitted from publication. No rebuild or stable promotion was performed. The package is currently private; authenticated registry verification passed, but anonymous pull access remains pending. See [compat/publication.json](compat/publication.json) for the publication receipt and [compat/validation.json](compat/validation.json) for qualification limits, including unresolved end-to-end literal generation.
 
 ## Local build
 

@@ -13,7 +13,7 @@ This fork's contributions are the V4.1 compatibility adaptations, regression tes
 
 ## Published scope
 
-This repository publishes source, configuration and validation summaries. **It does not currently publish a downloadable container image or a stable fork release.** Build the local candidate `local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.4`, or set `IMAGE` to a compatible image you have already obtained. The upstream stable image `ghcr.io/ormandj/sglang-deepseek-v41-flash-sm120:v0.4.3` does not include this fork's compatibility fixes.
+This repository publishes source, configuration, validation summaries and the Linux amd64 candidate `ghcr.io/loon-hejw/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.4`. **This is a candidate, not a stable fork release; end-to-end literal generation remains unreliable.** Its registry manifest digest is `sha256:0a32f40290db16a139ee2ac38ec4a8641b7310de07b79a249dd1c11d46a48a92`; see the [publication receipt](compat/publication.json). The upstream stable image `ghcr.io/ormandj/sglang-deepseek-v41-flash-sm120:v0.4.3` does not include this fork's compatibility fixes.
 
 | Item | Profile |
 | --- | --- |
@@ -29,12 +29,13 @@ This repository publishes source, configuration and validation summaries. **It d
 
 ## Quick start
 
-Build on a Linux amd64 Docker host with adequate RAM and disk space; [BUILDING.md](BUILDING.md) explains the build requirements and source checks. This step does not start an inference service or publish an image.
+Use a Linux amd64 Docker host meeting the hardware requirements above. The GHCR package is currently private: sign in with `docker login ghcr.io` using an account with package read access before pulling. Anonymous pull access has not been enabled. Pull the candidate and download the pinned model before starting the service. To build `local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.4` yourself, follow [BUILDING.md](BUILDING.md) and set `IMAGE` to that local image instead.
 
 ```bash
 git clone https://github.com/loon-hejw/sglang-deepseek-v41-flash-sm120-compat.git
 cd sglang-deepseek-v41-flash-sm120-compat
-bash scripts/build-compat.sh
+export IMAGE=ghcr.io/loon-hejw/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.4
+docker pull --platform linux/amd64 "$IMAGE"
 hf download deepseek-ai/DeepSeek-V4.1-Flash-1017 \
   --revision 1bae0e1088993b9b82de08f59de5be5a34e42170 \
   --local-dir /srv/models/DeepSeek-V4.1-Flash-1017
@@ -51,7 +52,7 @@ The launcher selects only the four requested devices, mounts the model read-only
 
 ## Validation and limits
 
-The separately built `local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.4` was tested on 2026-11-03. Its image identity is `sha256:bb27bdd8172e86db037840528b971fa5e2ec8d055236f49a3930d73be4ac58e7`, from source commit `b808761fbef06cec27ce7b3afc55c372cefa78c1`. A local rebuild is a different artifact and needs its own validation.
+The separately built `local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.4` was tested on 2026-11-03. Its local OCI index identity is `sha256:bb27bdd8172e86db037840528b971fa5e2ec8d055236f49a3930d73be4ac58e7`, from source commit `b808761fbef06cec27ce7b3afc55c372cefa78c1`. Publication reused its Linux amd64 runtime manifest, configuration and all 79 layers byte for byte, without rebuilding. The registry digest identifies that platform manifest; the local index additionally contained a build attestation omitted from publication. A local rebuild is a different artifact and needs its own validation.
 
 - Installed-image CPU: 1,198 cases and 691 subtests passed; one CUDA-only compact-verify test was skipped.
 - Native CUDA: eight installed Triton Markov combine / CUDA Graph replay cases passed, with no skips. This is a separate suite from the skipped CPU-build case.
@@ -63,7 +64,7 @@ The separately built `local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.4` 
 | `rc4_on` | 100/102 | 6/100 |
 | `rc4_off` | 100/102 | 3/100 |
 
-The 51-question quality set ran at temperatures 0 and 1. Literal-tool checks used both streaming modes, concurrency 1 and 4, and five rounds per combination. Correctness was scored against fixed answers; failed quality requests were repeated separately without replacing primary scores. Candidate API tool parameters matched the directly decoded raw tool arguments in both DSPARK modes. End-to-end literal generation still fails, so this candidate is not evidence that the complete problem is solved. No production replacement or public image release was performed.
+The 51-question quality set ran at temperatures 0 and 1. Literal-tool checks used both streaming modes, concurrency 1 and 4, and five rounds per combination. Correctness was scored against fixed answers; failed quality requests were repeated separately without replacing primary scores. Candidate API tool parameters matched the directly decoded raw tool arguments in both DSPARK modes. End-to-end literal generation still fails, so this candidate is not evidence that the complete problem is solved. Publication did not replace the production service.
 
 A subsequent focused diagnostic run on the same candidate used 442 requests, with private observation hooks outside the image. Twenty captured prompts matched the checkpoint's official encoder token for token. At reproduced failure positions, the target model favored `</think>` over the required `<think>` before grammar masking, and the mask left both scores unchanged; native generation without tool grammar reproduced the error. The original literal matrix passed 5/100 with DSPARK disabled and 6/100 enabled. An explicit `reasoning_effort=low` diagnostic passed only 17/100 and 19/100 respectively, so it does not guarantee literal preservation. No additional runtime defect was established, and no new patch, image or default change was made. These findings describe the tested checkpoint and numerical configuration, not every backend or precision.
 
@@ -119,7 +120,6 @@ SGLang series, applied in order to the pinned SGLang commit:
 | 38 | `38-compat-deepgemm-warmup-budget.patch` | [Ombori 0731](https://github.com/ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000) compatibility port; see [migration audit](compat/migration.json) | Skip DeepGEMM warmup when no supported shape fits available memory |
 | 39 | `39-compat-draft-sentinel.patch` | [Ombori 0731](https://github.com/ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000) compatibility port; see [migration audit](compat/migration.json) | Keep degenerate Markov greedy draft rows within vocabulary bounds |
 | 40 | `40-compat-cpu-regressions.patch` | Local regression tests for migrated fixes; see [migration audit](compat/migration.json) | CPU regression coverage for migrated behavior and retained V4.1 DSML parsing |
-
 | 41 | `41-v41-tool-literal-reasoning.patch` | Local V4.1 parser regression fix | Preserve literal think markers inside tool parameters across streaming boundaries and non-streaming parsing |
 
 FlashInfer series, applied to the pinned FlashInfer commit:

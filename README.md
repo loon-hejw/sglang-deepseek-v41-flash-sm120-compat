@@ -49,20 +49,25 @@ bash examples/serve-compat-tp4.sh
 
 The launcher selects only the four requested devices, mounts the model read-only and persists caches. It starts a detached container with restart policy `no` and retains it after exit. The dry run does not create directories or start Docker and redacts the API key. See [RUN.md](RUN.md) for health checks, lifecycle commands and configurable settings.
 
-## Qualified behavior
+## Validation and limits
 
-The privately built `local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.3` artifact was qualified on 2026-11-02 with four RTX PRO 6000 Blackwell Server Edition GPUs, driver 610.43.02, 600 W power limits, dual Xeon Platinum 8480+ CPUs and 503 GiB host RAM. Its recorded image identity is `sha256:f124217b8a003822be10c11cb107739e7a2259c29b3b11c0aed18dea58bae356`, built from source commit `d6528a773d1cda402de06844ba5270d94deb0d10`. A new local build is a separate artifact and needs its own qualification.
+The separately built `local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.4` was tested on 2026-11-03. Its image identity is `sha256:bb27bdd8172e86db037840528b971fa5e2ec8d055236f49a3930d73be4ac58e7`, from source commit `b808761fbef06cec27ce7b3afc55c372cefa78c1`. A local rebuild is a different artifact and needs its own validation.
 
-- Installed-image CPU gates: 895 passing cases and 480 passing subtests, one CUDA-only skip; the 132 compatibility cases are included in the 895.
-- Native GPU: 8 Triton Markov combine and CUDA Graph replay cases passed, zero skips.
-- Serving: 15 functional scenarios passed, including SSE, JSON schema, single/multiple tool calls, reasoning, image input, sampling penalties and 1/4/16 concurrent requests.
-- Long input: 34,220 prompt tokens answered correctly; repeating the prefix reported 34,048 cached tokens.
-- Stability: 1,800.5 seconds, 61 successful health samples and 31 successful chat probes; zero container restarts, OOM kills or detected CUDA/NCCL runtime errors.
-- Automatic SPS: 8 batch probes, 17 verify tiers and 56 fitted cells; no failed cells. The effective KV pool was 2,772,736 tokens.
+- Installed-image CPU: 1,198 cases and 691 subtests passed; one CUDA-only compact-verify test was skipped.
+- Native CUDA: eight installed Triton Markov combine / CUDA Graph replay cases passed, with no skips. This is a separate suite from the skipped CPU-build case.
+- The same four RTX PRO 6000 Blackwell GPUs ran three sequential workload modes. `rc3_on` uses `local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.3` with DSPARK; `rc4_on` and `rc4_off` use `local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.4` with DSPARK enabled and disabled respectively. The dependency version lists were identical.
 
-These are functional and stability results, **not a throughput benchmark or proof of complete sampling equivalence**. Full 1M-input stress, cancellation/SWA-eviction coverage, controlled DSPARK-disabled comparisons and timed warm restarts remain separate work. No TP8 performance claim is made. The [validation record](compat/validation.json) separates CPU, native CUDA, image build, serving and outstanding checks. Upstream performance history remains attributed to upstream in [CHANGELOG.md](CHANGELOG.md).
+| Mode | Quality suite | Literal-tool suite |
+| --- | --- | --- |
+| `rc3_on` | 99/102 | 0/100 |
+| `rc4_on` | 100/102 | 6/100 |
+| `rc4_off` | 100/102 | 3/100 |
 
-The first empty-cache start took 2,343 seconds, including compilation, CUDA Graph capture and SPS profiling. Compatible kernel caches and SPS tables survive container restarts; weights and CUDA Graphs still need initialization. Changing hardware or configuration can require new compilation/profiling. Use a version-specific cache and re-profile SPS on a new host.
+The 51-question quality set ran at temperatures 0 and 1. Literal-tool checks used both streaming modes, concurrency 1 and 4, and five rounds per combination. Correctness was scored against fixed answers; failed quality requests were repeated separately without replacing primary scores. Candidate API tool parameters matched the directly decoded raw tool arguments in both DSPARK modes. End-to-end literal generation still fails, so this candidate is not evidence that the complete problem is solved. No production replacement or public image release was performed.
+
+The [opt-in coding profile](examples/code-request-profile.json) uses temperature 1, reasoning effort `low`, top_p 1 and max_tokens 12,288. On eight small coding tasks repeated five times at concurrency 1, it passed 40/40 requests with DSPARK and 40/40 without it. The [example client](examples/code-request.py) preserves explicit request overrides and rejects truncated or empty final answers; it never promotes reasoning to code or retries automatically. See [RUN.md](RUN.md#opt-in-coding-requests).
+
+These are **not a throughput benchmark or proof of complete sampling equivalence**. API seed values were recorded, but deterministic inference was disabled and server seeds differed; these are repeated stochastic observations, not paired deterministic trials. The shared-host test used a 224 GiB memory limit, 16 CPU quota, process-local THP disable and HiCache ratio 0.1, with inputs up to 160,054 tokens. It does not qualify the full 1M limit, TP8, broad coding ability or production throughput. Full conditions, per-profile token accounting including reasoning, prior serving qualification and remaining checks are in the [validation record](compat/validation.json). Upstream performance history remains attributed in [CHANGELOG.md](CHANGELOG.md).
 
 ## Source and patches
 

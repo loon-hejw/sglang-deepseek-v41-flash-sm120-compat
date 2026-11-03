@@ -69,18 +69,23 @@ bash examples/serve-compat-tp4.sh
 
 ## 验收证据与边界
 
-2026-11-02 验收的是单独构建的 `local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.3`，镜像身份为 `sha256:f124217b8a003822be10c11cb107739e7a2259c29b3b11c0aed18dea58bae356`，构建源码提交为 `d6528a773d1cda402de06844ba5270d94deb0d10`。本地重新构建产生的是另一份产物，需要独立验证，不能只凭同名标签沿用结论。
+2026-11-03 验证的是独立构建的 `local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.4`，镜像身份为 `sha256:bb27bdd8172e86db037840528b971fa5e2ec8d055236f49a3930d73be4ac58e7`，构建源码为 `b808761fbef06cec27ce7b3afc55c372cefa78c1`。同标签的本地重新构建是另一份产物，不能自动沿用结论。
 
-- 镜像内 CPU：895 项通过、480 个子测试通过、1 项 CUDA 专用测试跳过；132 项兼容回归已包含在 895 项中。
-- 原生 GPU：实际 Triton Markov combine 与 CUDA Graph replay，8 项通过、0 跳过。
-- 模型接口：15 项功能场景通过，包含 SSE、JSON schema、单/双工具调用、思考、图片、采样惩罚以及 1/4/16 并发。
-- 长上下文：实际输入 34,220 prompt tokens，重复前缀命中 34,048 cached tokens。
-- 稳定性：连续 1800.5 秒，61 次健康采样、31 次聊天探针全部成功；0 重启、0 OOM，未发现 CUDA/NCCL 运行错误。
-- SPS：8 个 batch 探针、17 个 verify tiers，拟合 56 个 cell，无失败项；生效 KV 池为 2,772,736 tokens。
+- 镜像内 CPU：1,198 项及 691 个子测试通过，1 项 CUDA 专用 compact-verify 测试跳过。
+- 原生 GPU：实际安装的 Triton Markov combine 与 CUDA Graph replay，8 项通过、0 跳过；这是独立套件，不等于补跑上述跳过项。
+- 同一组四张 RTX PRO 6000 Blackwell 顺序运行三组工作负载。`rc3_on` 使用 `local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.3` 并开启 DSPARK；`rc4_on` 和 `rc4_off` 使用 `local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.4`，分别开启和关闭 DSPARK。两版安装包版本清单一致。
 
-以上是功能和稳定性验收，不是吞吐基准、完整采样等价性或回答质量提升证明。尚未完成完整 1M 输入压力、请求取消/SWA 回收专项、关闭 DSPARK 的受控对照和热启动计时。短请求吞吐和上游性能结果不能作为本镜像的通用性能承诺，也没有 TP8 实测结论。详细状态见 [验证记录](compat/validation.json)。
+| 模式 | 主质量集 | 工具字面量专项 |
+| --- | --- | --- |
+| `rc3_on` | 99/102 | 0/100 |
+| `rc4_on` | 100/102 | 6/100 |
+| `rc4_off` | 100/102 | 3/100 |
 
-独立空缓存首次启动耗时 2343 秒，包含内核编译、CUDA Graph 捕获和 SPS 调优。同镜像、硬件和参数可复用兼容编译缓存与 SPS 表，但仍需加载权重及捕获 CUDA Graph。换主机可尝试迁移兼容编译缓存，SPS 应按新机器重测；具体热启动耗时尚未测量。
+主质量集是 51 道有效题 × 温度 0/1；工具字面量专项覆盖流式/非流式、并发 1/4，每组合 5 轮。失败另做复测，不替换原始得分。`rc4_on` 和 `rc4_off` 两种模式下，API 工具参数均保持原始生成参数，但生成序列本身仍会写错字面量，因此端到端问题尚未全面解决。候选未用于替换生产，也未发布镜像。
+
+[代码请求预设](examples/code-request-profile.json) 显式设置 temperature 1、reasoning_effort `low`、top_p 1、max_tokens 12,288。8 道小型代码题各重复 5 次、并发 1，DSPARK 开启时通过 40/40，关闭时通过 40/40。[客户端示例](examples/code-request.py) 保留调用方显式覆盖，遇到截断或空正文报错，不把推理当代码、不自动重试；它不修改全局默认值。使用方法见 [RUN.md](RUN.md#opt-in-coding-requests)。
+
+请求 seed 已记录，但当前配置关闭确定性推理，服务器随机种子也不同；不能将这些结果解释为同随机序列的严格因果对照。测试与生产共享主机，测试副本限制 224 GiB 内存、16 CPU，采用进程级 THP 关闭与 HiCache ratio 0.1，最大实际输入 160,054 tokens。结果不证明完整采样等价、通用代码能力提升、生产吞吐或完整 1M/TP8 能力。详细条件、包含推理 token 的速度统计、此前服务验收及未完成项见[验证记录](compat/validation.json)。
 
 ## 开发验证
 
@@ -93,6 +98,7 @@ export COMPAT_PYTHON="$PWD/.venv/bin/python"
 bash scripts/test-compat.sh
 .venv/bin/python scripts/check-migration.py --source .cache/compat-sources/sglang
 python3 scripts/test_serve_compat_tp4.py
+python3 scripts/test_code_request.py
 bash scripts/validate-release.sh
 bash scripts/validate-docs.sh
 ```

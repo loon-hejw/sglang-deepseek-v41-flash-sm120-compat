@@ -276,9 +276,9 @@
     }
   },
   "remaining_validation": [
-    "Controlled quality and throughput comparisons using identical workloads, repetitions and output-token accounting including reasoning.",
-    "Compare overlap-history visibility and within-verify-block penalty behavior against a DSPARK-disabled control; CPU and functional probes do not establish complete sampling equivalence.",
-    "Full 1M-input stress, cancellation, targeted SWA eviction/recovery, padded-batch edge cases and reported real-workload format failures.",
+    "Literal tool-argument generation still fails in end-to-end tests; parser fidelity and generation correctness are separate.",
+    "Broader quality and controlled throughput measurements with explicit deterministic-seed semantics; the current repeated workloads do not establish sampling-distribution equivalence.",
+    "Full 1M-input stress, cancellation, targeted SWA eviction/recovery and padded-batch edge cases.",
     "Timed warm restarts and compilation-cache portability on another host.",
     "TP8 and dual-TP4 capacity/performance comparisons."
   ],
@@ -358,7 +358,7 @@
   },
   "rc4_parser_candidate": {
     "artifact": "local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.4",
-    "status": "pending_image_and_gpu_validation",
+    "status": "parser_fix_validated_generation_failures_remain",
     "scope": "V4.1 tool parameter literal reasoning markers; no changes to weights, model defaults or GPU kernels.",
     "cpu_source_body_tests": {
       "passed": 279,
@@ -370,6 +370,250 @@
       "subtests_passed": 211,
       "scope": "Existing installed dependencies with read-only candidate source overlays; not the final candidate image."
     },
-    "source_effective_tree": "5281c8e0c7c84d00ce1b14adc9eec8333ce02fcb"
+    "source_effective_tree": "5281c8e0c7c84d00ce1b14adc9eec8333ce02fcb",
+    "recorded_at_utc": "2026-11-03T05:30:42.016780+00:00",
+    "source_revision": "b808761fbef06cec27ce7b3afc55c372cefa78c1",
+    "image_id": "sha256:bb27bdd8172e86db037840528b971fa5e2ec8d055236f49a3930d73be4ac58e7",
+    "image_build": {
+      "status": "passed",
+      "installed_cpu_passed": 1198,
+      "subtests_passed": 691,
+      "cuda_only_skipped": 1,
+      "native_gpu_passed": 8,
+      "native_gpu_skipped": 0,
+      "native_scope": "Installed Triton Markov combine and CUDA Graph replay; does not rerun the skipped compact-verify test.",
+      "dependency_versions_changed_vs_rc3": false
+    },
+    "source_verification": {
+      "source_trees": "passed",
+      "sglang_effective_tree": "5281c8e0c7c84d00ce1b14adc9eec8333ce02fcb",
+      "full_verify_patches_command": "incomplete_network",
+      "base_verification": "passed separately using pinned manifest/config hashes and installed RootFS layers",
+      "reason": "Docker Hub authentication request timed out; final SGLang archive/patch/tree verification and installed identity gates passed."
+    },
+    "workload_comparison": {
+      "primary_requests": 926,
+      "valid_quality_cases": 51,
+      "quality_temperatures": [
+        0,
+        1
+      ],
+      "quality_requests_per_mode": 102,
+      "literal_requests_per_mode": 100,
+      "coding_policy_requests_per_rc4_mode": 160,
+      "max_prompt_tokens": 160054,
+      "conditions": {
+        "gpu": "4 x RTX PRO 6000 Blackwell Server Edition",
+        "tp": 4,
+        "ep": 2,
+        "context_length": 1048576,
+        "mem_fraction_static": 0.85,
+        "max_running_requests": 16,
+        "host_memory_limit_gib": 224,
+        "cpu_limit": 16,
+        "host_memory_numa_node": 1,
+        "process_thp_disabled": true,
+        "hicache_ratio": 0.1,
+        "concurrency": [
+          1,
+          4
+        ],
+        "modes_sequential_on_same_physical_gpus": true
+      },
+      "counts": {
+        "rc3_on": {
+          "quality": 99,
+          "literal": 0
+        },
+        "rc4_on": {
+          "quality": 100,
+          "literal": 6
+        },
+        "rc4_off": {
+          "quality": 100,
+          "literal": 3
+        }
+      },
+      "parser_attribution": {
+        "rc3_on": {
+          "literal_primary_requests": 100,
+          "raw_tool_arguments_correct": 6,
+          "api_tool_arguments_correct": 0,
+          "parser_argument_damage": 6,
+          "parser_changed_raw_arguments": 6,
+          "raw_generation_mismatch": 94,
+          "all_tool_rows_including_repeats": 136,
+          "all_parser_argument_damage": 7,
+          "all_parser_changed_raw_arguments": 7
+        },
+        "rc4_on": {
+          "literal_primary_requests": 100,
+          "raw_tool_arguments_correct": 6,
+          "api_tool_arguments_correct": 6,
+          "parser_argument_damage": 0,
+          "parser_changed_raw_arguments": 0,
+          "raw_generation_mismatch": 94,
+          "all_tool_rows_including_repeats": 126,
+          "all_parser_argument_damage": 0,
+          "all_parser_changed_raw_arguments": 0
+        },
+        "rc4_off": {
+          "literal_primary_requests": 100,
+          "raw_tool_arguments_correct": 3,
+          "api_tool_arguments_correct": 3,
+          "parser_argument_damage": 0,
+          "parser_changed_raw_arguments": 0,
+          "raw_generation_mismatch": 97,
+          "all_tool_rows_including_repeats": 126,
+          "all_parser_argument_damage": 0,
+          "all_parser_changed_raw_arguments": 0
+        }
+      },
+      "mode_artifacts": {
+        "rc3_on": {
+          "image": "local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.3",
+          "image_id": "sha256:f124217b8a003822be10c11cb107739e7a2259c29b3b11c0aed18dea58bae356"
+        },
+        "rc4_on": {
+          "image": "local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.4",
+          "image_id": "sha256:bb27bdd8172e86db037840528b971fa5e2ec8d055236f49a3930d73be4ac58e7"
+        },
+        "rc4_off": {
+          "image": "local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.4",
+          "image_id": "sha256:bb27bdd8172e86db037840528b971fa5e2ec8d055236f49a3930d73be4ac58e7"
+        }
+      },
+      "parser_fix_live_gate": true,
+      "end_to_end_literal_gate": false,
+      "new_primary_failures_vs_rc3_on": {
+        "rc4_on": [],
+        "rc4_off": []
+      },
+      "reproducibility_limit": "Identical API seed values were sent, but the tested runtime does not guarantee per-request deterministic sampling. These are repeated stochastic trials, not paired deterministic random streams. The automatically chosen server random seeds also differ; no bitwise reproducibility or sampling-distribution equivalence is established.",
+      "code_policy": {
+        "cases": 8,
+        "repetitions": 5,
+        "concurrency": 1,
+        "max_tokens": 12288,
+        "profiles": {
+          "rc4_on": {
+            "A": {
+              "temperature": 0,
+              "reasoning_effort": "high",
+              "requests": 40,
+              "passed": 37,
+              "truncated": 3,
+              "unit_tests_passed": 163,
+              "unit_tests_total": 180,
+              "median_first_stream_token_seconds": 0.13367109186947346,
+              "median_seconds": 1.1609106743708253,
+              "median_request_output_tokens_per_s_including_reasoning": 296.7452973491179
+            },
+            "B": {
+              "temperature": 1,
+              "reasoning_effort": "high",
+              "requests": 40,
+              "passed": 39,
+              "truncated": 1,
+              "unit_tests_passed": 177,
+              "unit_tests_total": 180,
+              "median_first_stream_token_seconds": 0.13635630439966917,
+              "median_seconds": 1.905787542462349,
+              "median_request_output_tokens_per_s_including_reasoning": 283.29886034063645
+            },
+            "C": {
+              "temperature": 1,
+              "reasoning_effort": "low",
+              "requests": 40,
+              "passed": 40,
+              "truncated": 0,
+              "unit_tests_passed": 180,
+              "unit_tests_total": 180,
+              "median_first_stream_token_seconds": 0.13449955359101295,
+              "median_seconds": 1.5391411292366683,
+              "median_request_output_tokens_per_s_including_reasoning": 281.53845924654127
+            },
+            "D": {
+              "temperature": 1,
+              "reasoning_effort": "none",
+              "requests": 40,
+              "passed": 38,
+              "truncated": 0,
+              "unit_tests_passed": 174,
+              "unit_tests_total": 180,
+              "median_first_stream_token_seconds": 0.13523399410769343,
+              "median_seconds": 0.41066582733765244,
+              "median_request_output_tokens_per_s_including_reasoning": 302.5083385987035
+            }
+          },
+          "rc4_off": {
+            "A": {
+              "temperature": 0,
+              "reasoning_effort": "high",
+              "requests": 40,
+              "passed": 38,
+              "truncated": 2,
+              "unit_tests_passed": 170,
+              "unit_tests_total": 180,
+              "median_first_stream_token_seconds": 0.12972226226702332,
+              "median_seconds": 2.5598151832818985,
+              "median_request_output_tokens_per_s_including_reasoning": 148.72779129332503
+            },
+            "B": {
+              "temperature": 1,
+              "reasoning_effort": "high",
+              "requests": 40,
+              "passed": 40,
+              "truncated": 0,
+              "unit_tests_passed": 180,
+              "unit_tests_total": 180,
+              "median_first_stream_token_seconds": 0.12816722970455885,
+              "median_seconds": 3.7202141005545855,
+              "median_request_output_tokens_per_s_including_reasoning": 149.2716549918182
+            },
+            "C": {
+              "temperature": 1,
+              "reasoning_effort": "low",
+              "requests": 40,
+              "passed": 40,
+              "truncated": 0,
+              "unit_tests_passed": 180,
+              "unit_tests_total": 180,
+              "median_first_stream_token_seconds": 0.12991244532167912,
+              "median_seconds": 2.5761399688199162,
+              "median_request_output_tokens_per_s_including_reasoning": 147.46039546139934
+            },
+            "D": {
+              "temperature": 1,
+              "reasoning_effort": "none",
+              "requests": 40,
+              "passed": 39,
+              "truncated": 0,
+              "unit_tests_passed": 177,
+              "unit_tests_total": 180,
+              "median_first_stream_token_seconds": 0.13008326198905706,
+              "median_seconds": 0.9035559813492,
+              "median_request_output_tokens_per_s_including_reasoning": 134.1041495403108
+            }
+          }
+        },
+        "selected_request_profile": {
+          "temperature": 1,
+          "reasoning_effort": "low",
+          "top_p": 1,
+          "max_tokens": 12288
+        },
+        "selection_rule": "Use temperature 1 / low only when its 40-request pass count is at least temperature 1 / high and truncations do not increase in either DSPARK mode; otherwise choose temperature 1 / high. None is diagnostic only.",
+        "timing_definition": "Median per-request completion_tokens / whole-request seconds, including reasoning; shared-host diagnostic, not production throughput."
+      },
+      "scope_limit": "Synthetic objective checks with repeated stochastic outputs, not an official benchmark, proof of general quality improvement or complete DSPARK sampling equivalence."
+    },
+    "deployment": {
+      "candidate_only": true,
+      "production_changed": false,
+      "public_image_pushed": false,
+      "test_gpu_resources_released": true
+    },
+    "evidence_policy": "Sanitized summaries only. Private synthetic outputs, raw token IDs, build logs and runtime receipts retained separately."
   }
 }

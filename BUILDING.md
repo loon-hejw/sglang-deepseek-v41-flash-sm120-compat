@@ -26,6 +26,7 @@ bash -n scripts/*.sh build/*.sh examples/*.sh
 bash scripts/validate-release.sh
 bash scripts/validate-docs.sh
 python3 scripts/test_serve_compat_tp4.py
+python3 scripts/test_code_request.py
 python3 scripts/test_validate_publish_release.py
 python3 scripts/test_verify_release_target.py
 ```

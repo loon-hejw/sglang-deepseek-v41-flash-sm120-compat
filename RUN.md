@@ -56,8 +56,31 @@ The static memory fraction 0.80 failed to leave a KV pool after loading this mod
 
 Use the OpenAI-compatible `/v1/chat/completions` endpoint. Defaults are `sampling-defaults=openai`, temperature 1.0 and top_p 1.0; explicit request values take precedence. The reasoning parser is `deepseek-v41` and the tool parser is `deepseekv41`. Reasoning counts against `max_tokens`; allocate enough output budget for the final answer. Image input supports at most 128 images per request.
 
-The 1M limit is per request; all requests share the device KV pool. Validation used 34,220 prompt tokens, not a full 1M-input stress test. Short 1/4/16-concurrency probes verify operation and are not a capacity benchmark. See the [validation record](compat/validation.json) for the measured artifact and remaining checks.
+### Opt-in coding requests
 
-The empty-cache first start took 2343 seconds on the qualified host, including compilation, CUDA Graph capture and automatic SPS profiling. Later starts can reuse compatible compilation artifacts and SPS tables, but still load weights and capture process-local CUDA Graphs. No timed warm-restart measurement has been made. Preserve the cache bind mount; a different image, GPU architecture or key configuration may invalidate entries. On a new host, measure SPS again rather than assuming identical GPU models imply identical communication costs.
+Use [examples/code-request-profile.json](examples/code-request-profile.json) for an explicit coding request: temperature 1, reasoning_effort `low`, top_p 1 and max_tokens 12,288. This is a request preset, not a server default. The reasoning effort is a soft model instruction, not a hard reservation of tokens for final code.
+
+Save a request such as this as `request.json`:
+
+```json
+{
+  "model": "deepseek-v4.1-flash-1017",
+  "messages": [{"role": "user", "content": "Implement Python valid_brackets(text) for matching ()[]{} while ignoring other characters. Return only Python code."}]
+}
+```
+
+```bash
+INFERENCE_BASE_URL=http://127.0.0.1:18001/v1 python3 examples/code-request.py --request request.json
+```
+
+Set `INFERENCE_API_KEY` in the process environment if authentication is enabled. Explicit request fields override the profile, including temperature 0. The example accepts one nonstream completion and prints final content only. A length finish, abnormal finish or empty final body is an error; no partial output is accepted, reasoning is not substituted, and there is no automatic retry. Validate generated code before using it.
+
+The profile was selected from eight small coding tasks repeated five times in each DSPARK mode. It is not a guarantee for harder tasks or immunity from token exhaustion. Tool argument parsing now preserves literal thinking markers inside V4.1 tool bodies, but the model/decoder can still generate the wrong string. Do not treat parser fidelity as proof that a tool argument is semantically correct.
+
+### Context and cache behavior
+
+The 1M limit is per request; all requests share the device KV pool. The candidate workload comparison included inputs up to 160,054 tokens and concurrency 1/4, not full 1M stress or a capacity benchmark. See the [validation record](compat/validation.json) for the exact artifact, configuration and limitations.
+
+For the earlier `local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.3` artifact, the empty-cache first start took 2343 seconds on the qualified host, including compilation, CUDA Graph capture and automatic SPS profiling. Later starts can reuse compatible compilation artifacts and SPS tables, but still load weights and capture process-local CUDA Graphs. No timed warm-restart measurement has been made. Preserve the cache bind mount; a different image, GPU architecture or key configuration may invalidate entries. On a new host, measure SPS again rather than assuming identical GPU models imply identical communication costs.
 
 `examples/serve-deepseek-v41-flash-tp4.sh` is retained as the upstream baseline recipe and defaults to `ghcr.io/ormandj/sglang-deepseek-v41-flash-sm120:v0.4.3`. Use the compatibility launcher above for this fork.

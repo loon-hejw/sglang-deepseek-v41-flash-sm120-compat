@@ -39,6 +39,13 @@ else
 fi
 require_text "$repo/README.md" 'not a throughput benchmark or proof of complete sampling equivalence'
 require_text "$repo/README.md" 'https://github.com/loon-hejw/sglang-deepseek-v41-flash-sm120-compat.git'
+require_text "$repo/README.md" 'TESTING.md'
+require_text "$repo/README.zh-CN.md" 'TESTING.zh-CN.md'
+for name in TESTING.md TESTING.zh-CN.md; do
+  require_text "$repo/$name" 'compat/validation.json'
+  require_text "$repo/$name" 'compat/topology-comparison-20261103.json'
+  require_text "$repo/$name" 'compat/deployment-comparisons-20261103.json'
+done
 grep -Fx "IMAGE=\${IMAGE:-${image}}" "$launcher" >/dev/null
 for value in '--tp-size 4 --ep-size 2' '--speculative-algorithm DSPARK' \
   '--speculative-dspark-block-size 5' '--speculative-dspark-sps-autotune auto' \
@@ -61,6 +68,7 @@ if (root/'compat/publication.json').exists():
     files.append(root/'compat/publication.json')
 if (root/'compat/topology-comparison-20261103.json').exists():
     files.append(root/'compat/topology-comparison-20261103.json')
+files.append(root/'compat/deployment-comparisons-20261103.json')
 patterns = [r'10\.216\.', r'harbor\.bhidi\.com', r'/Users/', r'~/git/',
             r'home\.[a-z0-9.-]+\.(?:com|net|org)', r'\u2014',
             r'gh[pousr]_[A-Za-z0-9]{20,}', r'github_pat_[A-Za-z0-9_]{20,}',
@@ -70,7 +78,7 @@ for path in files:
     for line, text in enumerate(path.read_text().splitlines(), 1):
         if any(re.search(pattern, text) for pattern in patterns):
             errors.append(f'{path.relative_to(root)}:{line}: private reference, credential pattern or em dash')
-for name in ['README.md','README.zh-CN.md','RUN.md','BUILDING.md']:
+for name in ['README.md','README.zh-CN.md','RUN.md','BUILDING.md','TESTING.md','TESTING.zh-CN.md']:
     path=root/name
     for target in re.findall(r'\[[^\]]*\]\(([^)]+)\)', path.read_text()):
         if '://' in target or target.startswith(('#','mailto:')): continue

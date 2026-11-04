@@ -1,6 +1,6 @@
 # DeepSeek-V4.1-Flash TP4 on SM120
 
-A compatibility fork of [ormandj/sglang-deepseek-v41-flash-sm120](https://github.com/ormandj/sglang-deepseek-v41-flash-sm120), with applicable correctness fixes from the [0731 project](https://github.com/ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000) and a validated four-GPU serving profile. [中文说明](README.zh-CN.md) · [Run guide](RUN.md) · [Validation record](compat/validation.json).
+A compatibility fork of [ormandj/sglang-deepseek-v41-flash-sm120](https://github.com/ormandj/sglang-deepseek-v41-flash-sm120), with applicable correctness fixes from the [0731 project](https://github.com/ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000) and a validated four-GPU serving profile. [中文说明](README.zh-CN.md) · [Run guide](RUN.md) · [Test comparisons](TESTING.md) · [Validation record](compat/validation.json).
 
 ## Acknowledgments and provenance
 

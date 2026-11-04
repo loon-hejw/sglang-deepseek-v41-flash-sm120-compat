@@ -1,0 +1,707 @@
+{
+  "schema": 1,
+  "recorded_date": "2026-11-03",
+  "status": "Completed historical deployment comparisons; publishing summaries does not rerun or requalify the images.",
+  "evidence_policy": "Allowlisted numerical summaries and artifact identities only. Private addresses, credentials, container identities, raw prompts and model responses are excluded. Source hashes identify privately retained evidence; the summaries alone do not reproduce every request.",
+  "hardware": {
+    "gpu": "NVIDIA RTX PRO 6000 Blackwell Server Edition",
+    "gpu_count": 4,
+    "gpu_memory_mib_each": 97887,
+    "gpu_power_limit_watts_each": 600,
+    "driver": "610.43.02",
+    "cpu": "2 x Intel Xeon Platinum 8480+",
+    "logical_cpus": 224,
+    "host_ram_gib": 503,
+    "interconnect": "PCIe P2P, no NVLink"
+  },
+  "original_framework": {
+    "baseline": {
+      "artifact": "ghcr.io/ormandj/sglang-deepseek-v41-flash-sm120:v0.4.3",
+      "image_id": "sha256:0f7b5d6dc80472b2a7ebf4333cb88300789cf9c68556e3c563246ce1f6fd5787"
+    },
+    "candidate": {
+      "artifact": "local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.3",
+      "image_id": "sha256:f124217b8a003822be10c11cb107739e7a2259c29b3b11c0aed18dea58bae356",
+      "source_revision": "d6528a773d1cda402de06844ba5270d94deb0d10"
+    },
+    "model": {
+      "repository": "deepseek-ai/DeepSeek-V4.1-Flash-1017",
+      "revision": "1bae0e1088993b9b82de08f59de5be5a34e42170"
+    },
+    "conditions": {
+      "same_model_weights": true,
+      "same_physical_four_gpus_sequentially": true,
+      "same_explicit_server_command": true,
+      "host_memory_limit_gib": 224,
+      "cpu_quota": 16,
+      "hicache_ratio": 0.1,
+      "process_thp_disabled": true
+    },
+    "quality": {
+      "executed_requests": 208,
+      "scored_requests": 204,
+      "cases": 51,
+      "temperatures": [
+        0,
+        1
+      ],
+      "top_p": 1,
+      "repetitions_per_temperature": 1,
+      "concurrency_policy": "Temperature 1 tools, structured, penalties and instruction cases run in mixed batches of four; all other cases run singly. Identical grouping and seeds for both versions.",
+      "excluded_case": "arithmetic_invoice: ambiguous wording, excluded symmetrically; original responses retained privately",
+      "results": {
+        "baseline": {
+          "passed": 98,
+          "total": 102,
+          "by_temperature": {
+            "0": {
+              "requests": 51,
+              "passed": 49,
+              "api_errors": 0,
+              "truncated": 1
+            },
+            "1": {
+              "requests": 51,
+              "passed": 49,
+              "api_errors": 0,
+              "truncated": 0
+            }
+          }
+        },
+        "candidate": {
+          "passed": 99,
+          "total": 102,
+          "by_temperature": {
+            "0": {
+              "requests": 51,
+              "passed": 49,
+              "api_errors": 0,
+              "truncated": 1
+            },
+            "1": {
+              "requests": 51,
+              "passed": 50,
+              "api_errors": 0,
+              "truncated": 0
+            }
+          }
+        }
+      },
+      "input_tokens": [
+        20054,
+        40054,
+        80054,
+        160054
+      ]
+    },
+    "limitations": [
+      "Common explicit serving parameters, not a reconstruction of every historical deployment default.",
+      "Synthetic objective quality checks; timing is diagnostic, not a controlled throughput benchmark.",
+      "One draw per case and temperature; not a general quality superiority claim."
+    ]
+  },
+  "cross_model": {
+    "configurations": {
+      "0731": {
+        "model": "DeepSeek-V4-Flash-0731",
+        "image_id": "sha256:2fceff11661eb240cb6c007bfbc505c95e549c76c1af437dd7839d0aea6cf6ef",
+        "runtime_parameters": {
+          "tp_size": 4,
+          "dp_size": 4,
+          "ep_size": 4,
+          "enable_dp_attention": true,
+          "enable_dp_lm_head": true,
+          "moe_a2a_backend": "none",
+          "context_length": 1048576,
+          "max_running_requests": 256,
+          "chunked_prefill_size": 1024,
+          "max_prefill_tokens": 16384,
+          "cuda_graph_max_bs_decode": 64,
+          "speculative_algorithm": "DSPARK",
+          "speculative_dspark_block_size": 7,
+          "mem_fraction_static": 0.85,
+          "kv_cache_dtype": "fp8_e4m3",
+          "enable_hierarchical_cache": false,
+          "hicache_ratio": 2.0,
+          "attention_backend": "dsv4",
+          "moe_runner_backend": "flashinfer_mxfp4",
+          "reasoning_parser": "deepseek-v4",
+          "tool_call_parser": "deepseekv4"
+        },
+        "launch_chunked_prefill_size": 4096,
+        "host_limits": {
+          "memory_gib": null,
+          "cpu_quota": null
+        },
+        "artifact_note": "Existing deployed 0731 image identified by its Docker image ID; no claim that this measures a named upstream release."
+      },
+      "1017_rc4": {
+        "model": "deepseek-v4.1-flash-1017",
+        "image_id": "sha256:0a32f40290db16a139ee2ac38ec4a8641b7310de07b79a249dd1c11d46a48a92",
+        "runtime_parameters": {
+          "tp_size": 4,
+          "dp_size": 1,
+          "attn_dp_size": 1,
+          "ep_size": 2,
+          "enable_dp_attention": false,
+          "enable_dp_lm_head": false,
+          "moe_a2a_backend": "none",
+          "context_length": 1048576,
+          "max_running_requests": 16,
+          "chunked_prefill_size": 8192,
+          "max_prefill_tokens": 8192,
+          "cuda_graph_max_bs_decode": 16,
+          "speculative_algorithm": "DSPARK",
+          "speculative_dspark_block_size": 5,
+          "speculative_dspark_sps_autotune": "auto",
+          "mem_fraction_static": 0.85,
+          "kv_cache_dtype": "fp8_e4m3",
+          "enable_hierarchical_cache": true,
+          "hicache_ratio": 0.1,
+          "attention_backend": "dsv4",
+          "moe_runner_backend": "flashinfer_mxfp4",
+          "reasoning_parser": "deepseek-v41",
+          "tool_call_parser": "deepseekv41"
+        },
+        "launch_chunked_prefill_size": 8192,
+        "host_limits": {
+          "memory_gib": 224.0,
+          "cpu_quota": 16.0
+        },
+        "artifact": "ghcr.io/loon-hejw/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.4",
+        "source_revision": "b808761fbef06cec27ce7b3afc55c372cefa78c1",
+        "model_revision": "1bae0e1088993b9b82de08f59de5be5a34e42170"
+      }
+    },
+    "placement": "Separate four-GPU groups and corresponding NUMA memory nodes on one eight-GPU host. Quality requests were paired concurrently; speed batches were measured separately in alternating order.",
+    "quality": {
+      "methodology": {
+        "cases": 51,
+        "excluded": {
+          "arithmetic_invoice": "Previously adjudicated ambiguous wording; excluded symmetrically before this comparison."
+        },
+        "requests": 204,
+        "temperatures": [
+          0,
+          1
+        ],
+        "top_p": 1,
+        "repetitions": 1,
+        "quality_concurrency_per_model": 1,
+        "thinking": "high with thinking=true for reasoning/coding; none with thinking=false elsewhere",
+        "code_budget": 12288,
+        "reasoning_budget": 12288,
+        "tool_budget": 4096,
+        "other_budget": 2048,
+        "case_sha256": "bcfb4856dbdc456adb6955d4d41f12b165d99474a305541e17d0281a9a9e62ec",
+        "seed_note": "Same supplied seeds; no claim of deterministic equality across deployments."
+      },
+      "results": {
+        "0731": {
+          "passed": 88,
+          "total": 102,
+          "api_errors": 0,
+          "truncated": 0,
+          "by_category": {
+            "coding": {
+              "passed": 15,
+              "total": 16
+            },
+            "instructions": {
+              "passed": 13,
+              "total": 16
+            },
+            "long_context": {
+              "passed": 8,
+              "total": 8
+            },
+            "penalties": {
+              "passed": 8,
+              "total": 8
+            },
+            "reasoning": {
+              "passed": 21,
+              "total": 22
+            },
+            "structured": {
+              "passed": 11,
+              "total": 16
+            },
+            "tools": {
+              "passed": 12,
+              "total": 16
+            }
+          },
+          "by_temperature": {
+            "0": {
+              "passed": 44,
+              "total": 51
+            },
+            "1": {
+              "passed": 44,
+              "total": 51
+            }
+          },
+          "max_prompt_tokens": 160054
+        },
+        "1017_rc4": {
+          "passed": 98,
+          "total": 102,
+          "api_errors": 0,
+          "truncated": 2,
+          "by_category": {
+            "coding": {
+              "passed": 14,
+              "total": 16
+            },
+            "instructions": {
+              "passed": 16,
+              "total": 16
+            },
+            "long_context": {
+              "passed": 8,
+              "total": 8
+            },
+            "penalties": {
+              "passed": 8,
+              "total": 8
+            },
+            "reasoning": {
+              "passed": 22,
+              "total": 22
+            },
+            "structured": {
+              "passed": 16,
+              "total": 16
+            },
+            "tools": {
+              "passed": 14,
+              "total": 16
+            }
+          },
+          "by_temperature": {
+            "0": {
+              "passed": 48,
+              "total": 51
+            },
+            "1": {
+              "passed": 50,
+              "total": 51
+            }
+          },
+          "max_prompt_tokens": 160054
+        }
+      },
+      "paired_outcomes": {
+        "1017_only": 12,
+        "both_pass": 86,
+        "both_fail": 2,
+        "0731_only": 2
+      }
+    },
+    "performance": {
+      "completed_batches": 24,
+      "measured_requests": 60,
+      "workloads": {
+        "explanation": "Short Chinese explanation task about database transaction isolation.",
+        "code": "Python in-memory LRU cache with TTL, capacity limits, metrics, thread safety and unit tests."
+      },
+      "thinking": false,
+      "temperature": 1,
+      "top_p": 1,
+      "max_tokens": 1024,
+      "concurrency": [
+        1,
+        4
+      ],
+      "repetitions": 3,
+      "warmup": "Four warmup requests excluded. Repeated prefixes; caches were not flushed. Servers measured separately and order alternated.",
+      "metric": "Median across three repetitions of total returned completion tokens divided by whole-batch wall time including TTFT. Completion tokens include reasoning if present; thinking was disabled for speed requests. C4 is aggregate throughput, not per-request speed or server decode-log rate.",
+      "medians": [
+        {
+          "model": "0731",
+          "workload": "explanation",
+          "concurrency": 1,
+          "batches": 3,
+          "median_aggregate_tps": 126.05181846216887,
+          "input_tokens_range": [
+            40,
+            40
+          ],
+          "output_tokens_range": [
+            1024,
+            1024
+          ]
+        },
+        {
+          "model": "1017_rc4",
+          "workload": "explanation",
+          "concurrency": 1,
+          "batches": 3,
+          "median_aggregate_tps": 136.8577853639093,
+          "input_tokens_range": [
+            40,
+            40
+          ],
+          "output_tokens_range": [
+            1024,
+            1024
+          ]
+        },
+        {
+          "model": "0731",
+          "workload": "explanation",
+          "concurrency": 4,
+          "batches": 3,
+          "median_aggregate_tps": 336.28487390476374,
+          "input_tokens_range": [
+            40,
+            40
+          ],
+          "output_tokens_range": [
+            1024,
+            1024
+          ]
+        },
+        {
+          "model": "1017_rc4",
+          "workload": "explanation",
+          "concurrency": 4,
+          "batches": 3,
+          "median_aggregate_tps": 551.0242832907672,
+          "input_tokens_range": [
+            40,
+            40
+          ],
+          "output_tokens_range": [
+            1024,
+            1024
+          ]
+        },
+        {
+          "model": "0731",
+          "workload": "code",
+          "concurrency": 1,
+          "batches": 3,
+          "median_aggregate_tps": 188.6412198226817,
+          "input_tokens_range": [
+            46,
+            46
+          ],
+          "output_tokens_range": [
+            1024,
+            1024
+          ]
+        },
+        {
+          "model": "1017_rc4",
+          "workload": "code",
+          "concurrency": 1,
+          "batches": 3,
+          "median_aggregate_tps": 252.30663017584789,
+          "input_tokens_range": [
+            46,
+            46
+          ],
+          "output_tokens_range": [
+            1024,
+            1024
+          ]
+        },
+        {
+          "model": "0731",
+          "workload": "code",
+          "concurrency": 4,
+          "batches": 3,
+          "median_aggregate_tps": 553.9594398857946,
+          "input_tokens_range": [
+            46,
+            46
+          ],
+          "output_tokens_range": [
+            1024,
+            1024
+          ]
+        },
+        {
+          "model": "1017_rc4",
+          "workload": "code",
+          "concurrency": 4,
+          "batches": 3,
+          "median_aggregate_tps": 724.6301928922519,
+          "input_tokens_range": [
+            46,
+            46
+          ],
+          "output_tokens_range": [
+            1024,
+            1024
+          ]
+        }
+      ],
+      "batches": [
+        {
+          "endpoint": "0731",
+          "workload": "explanation",
+          "concurrency": 1,
+          "repeat": 0,
+          "elapsed_s": 8.635258643887937,
+          "output_tokens": 1024,
+          "requests": 1,
+          "aggregate_output_tps": 118.58359340803189
+        },
+        {
+          "endpoint": "1017_rc4",
+          "workload": "explanation",
+          "concurrency": 1,
+          "repeat": 0,
+          "elapsed_s": 7.700715304352343,
+          "output_tokens": 1024,
+          "requests": 1,
+          "aggregate_output_tps": 132.97466008401176
+        },
+        {
+          "endpoint": "1017_rc4",
+          "workload": "explanation",
+          "concurrency": 1,
+          "repeat": 1,
+          "elapsed_s": 6.239060805179179,
+          "output_tokens": 1024,
+          "requests": 1,
+          "aggregate_output_tps": 164.12726722425202
+        },
+        {
+          "endpoint": "0731",
+          "workload": "explanation",
+          "concurrency": 1,
+          "repeat": 1,
+          "elapsed_s": 8.099971406161785,
+          "output_tokens": 1024,
+          "requests": 1,
+          "aggregate_output_tps": 126.42019936280589
+        },
+        {
+          "endpoint": "0731",
+          "workload": "explanation",
+          "concurrency": 1,
+          "repeat": 2,
+          "elapsed_s": 8.12364321667701,
+          "output_tokens": 1024,
+          "requests": 1,
+          "aggregate_output_tps": 126.05181846216887
+        },
+        {
+          "endpoint": "1017_rc4",
+          "workload": "explanation",
+          "concurrency": 1,
+          "repeat": 2,
+          "elapsed_s": 7.482219570316374,
+          "output_tokens": 1024,
+          "requests": 1,
+          "aggregate_output_tps": 136.8577853639093
+        },
+        {
+          "endpoint": "0731",
+          "workload": "explanation",
+          "concurrency": 4,
+          "repeat": 0,
+          "elapsed_s": 12.357406105846167,
+          "output_tokens": 4096,
+          "requests": 4,
+          "aggregate_output_tps": 331.461146855263
+        },
+        {
+          "endpoint": "1017_rc4",
+          "workload": "explanation",
+          "concurrency": 4,
+          "repeat": 0,
+          "elapsed_s": 8.240239411592484,
+          "output_tokens": 4096,
+          "requests": 4,
+          "aggregate_output_tps": 497.0729362835854
+        },
+        {
+          "endpoint": "1017_rc4",
+          "workload": "explanation",
+          "concurrency": 4,
+          "repeat": 1,
+          "elapsed_s": 7.084034506231546,
+          "output_tokens": 4096,
+          "requests": 4,
+          "aggregate_output_tps": 578.2015878659131
+        },
+        {
+          "endpoint": "0731",
+          "workload": "explanation",
+          "concurrency": 4,
+          "repeat": 1,
+          "elapsed_s": 12.180149384774268,
+          "output_tokens": 4096,
+          "requests": 4,
+          "aggregate_output_tps": 336.28487390476374
+        },
+        {
+          "endpoint": "0731",
+          "workload": "explanation",
+          "concurrency": 4,
+          "repeat": 2,
+          "elapsed_s": 11.391482959501445,
+          "output_tokens": 4096,
+          "requests": 4,
+          "aggregate_output_tps": 359.56688120080054
+        },
+        {
+          "endpoint": "1017_rc4",
+          "workload": "explanation",
+          "concurrency": 4,
+          "repeat": 2,
+          "elapsed_s": 7.4334292048588395,
+          "output_tokens": 4096,
+          "requests": 4,
+          "aggregate_output_tps": 551.0242832907672
+        },
+        {
+          "endpoint": "0731",
+          "workload": "code",
+          "concurrency": 1,
+          "repeat": 0,
+          "elapsed_s": 5.428293990902603,
+          "output_tokens": 1024,
+          "requests": 1,
+          "aggregate_output_tps": 188.6412198226817
+        },
+        {
+          "endpoint": "1017_rc4",
+          "workload": "code",
+          "concurrency": 1,
+          "repeat": 0,
+          "elapsed_s": 4.236622522585094,
+          "output_tokens": 1024,
+          "requests": 1,
+          "aggregate_output_tps": 241.70196767381051
+        },
+        {
+          "endpoint": "1017_rc4",
+          "workload": "code",
+          "concurrency": 1,
+          "repeat": 1,
+          "elapsed_s": 3.7939823670312762,
+          "output_tokens": 1024,
+          "requests": 1,
+          "aggregate_output_tps": 269.90109624606976
+        },
+        {
+          "endpoint": "0731",
+          "workload": "code",
+          "concurrency": 1,
+          "repeat": 1,
+          "elapsed_s": 5.89586978033185,
+          "output_tokens": 1024,
+          "requests": 1,
+          "aggregate_output_tps": 173.6809051339604
+        },
+        {
+          "endpoint": "0731",
+          "workload": "code",
+          "concurrency": 1,
+          "repeat": 2,
+          "elapsed_s": 5.106057277880609,
+          "output_tokens": 1024,
+          "requests": 1,
+          "aggregate_output_tps": 200.54612478319783
+        },
+        {
+          "endpoint": "1017_rc4",
+          "workload": "code",
+          "concurrency": 1,
+          "repeat": 2,
+          "elapsed_s": 4.058553670533001,
+          "output_tokens": 1024,
+          "requests": 1,
+          "aggregate_output_tps": 252.30663017584789
+        },
+        {
+          "endpoint": "0731",
+          "workload": "code",
+          "concurrency": 4,
+          "repeat": 0,
+          "elapsed_s": 7.294916696846485,
+          "output_tokens": 4096,
+          "requests": 4,
+          "aggregate_output_tps": 561.4868778104974
+        },
+        {
+          "endpoint": "1017_rc4",
+          "workload": "code",
+          "concurrency": 4,
+          "repeat": 0,
+          "elapsed_s": 6.151426571421325,
+          "output_tokens": 4096,
+          "requests": 4,
+          "aggregate_output_tps": 665.8618049721097
+        },
+        {
+          "endpoint": "1017_rc4",
+          "workload": "code",
+          "concurrency": 4,
+          "repeat": 1,
+          "elapsed_s": 5.652538412250578,
+          "output_tokens": 4096,
+          "requests": 4,
+          "aggregate_output_tps": 724.6301928922519
+        },
+        {
+          "endpoint": "0731",
+          "workload": "code",
+          "concurrency": 4,
+          "repeat": 1,
+          "elapsed_s": 7.697494573891163,
+          "output_tokens": 4096,
+          "requests": 4,
+          "aggregate_output_tps": 532.1211935495305
+        },
+        {
+          "endpoint": "0731",
+          "workload": "code",
+          "concurrency": 4,
+          "repeat": 2,
+          "elapsed_s": 7.394043146632612,
+          "output_tokens": 4096,
+          "requests": 4,
+          "aggregate_output_tps": 553.9594398857946
+        },
+        {
+          "endpoint": "1017_rc4",
+          "workload": "code",
+          "concurrency": 4,
+          "repeat": 2,
+          "elapsed_s": 5.544678285717964,
+          "output_tokens": 4096,
+          "requests": 4,
+          "aggregate_output_tps": 738.7263586690893
+        }
+      ]
+    },
+    "limitations": [
+      "Models, frameworks, DP/EP, DSPARK block size, caches and host CPU/memory limits differ; not an isolated weight or 1017 parameter experiment.",
+      "Small synthetic sample; supplied seeds do not guarantee identical random streams.",
+      "Different tokenizers make cross-model token rates an imperfect measure of useful text generation.",
+      "These measurements and the later topology experiment have separate runs and conditions; do not combine their speed or quality scores.",
+      "Not full 1M context, TP8, sustained-load or production throughput qualification."
+    ]
+  },
+  "related_records": {
+    "rc4_dspark_and_coding": "compat/validation.json#/rc4_parser_candidate/workload_comparison",
+    "literal_generation": "compat/validation.json#/literal_generation_diagnosis",
+    "same_model_topology": "compat/topology-comparison-20261103.json"
+  },
+  "evidence_sha256": {
+    "original_framework_report": "82f15f4d226976d06ffa1540982830c497e49b338b2727d6bd307d449b1df5cf",
+    "original_framework_parity": "67ff14d0a829d0e741f15a3069bc5c2f019241de026fc6a7b67e956de62381c4",
+    "original_framework_baseline_launch": "8e20ada36a8482263d0a2e05651cfbc8d6a85815a1dc3eb446c4e0ad4f56e81b",
+    "original_framework_candidate_launch": "7d8ef09117a8db1bd0d6638767298a259c3df5878f37e51b893f575c4d52e8bf",
+    "cross_model_summary": "ddd5fca53c40a06421889bec8d22d79166f0f637b31447439c77203d7b761f82",
+    "cross_model_deployment_metadata": "40fb0b4c1aa4708f8ae86f0e8c89c30ff7a709a18518dab231861121e4eb89cb",
+    "cross_model_speed_batches": "363fe04989f454b9e42796ab6c13689a9243e6d07bd087d8a4b994914cdb9c6d"
+  }
+}

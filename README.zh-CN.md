@@ -76,6 +76,8 @@ bash examples/serve-compat-tp4.sh
 
 ## 验收证据与边界
 
+[测试与参数对比总览](TESTING.zh-CN.md)集中记录框架、DSPARK 开关、代码请求四组策略、Attention DP/EP、0731 部署对照，以及已完成和未完成项目；每组结果均关联对应证据与适用边界。
+
 2026-11-03 验证的是独立构建的 `local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.4`，本地 OCI 索引身份为 `sha256:bb27bdd8172e86db037840528b971fa5e2ec8d055236f49a3930d73be4ac58e7`，构建源码为 `b808761fbef06cec27ce7b3afc55c372cefa78c1`。发布时直接复用其 Linux amd64 运行清单、配置及全部 79 个层，逐字节一致，没有重新构建。仓库摘要对应平台清单；本地索引还包含本次未发布的构建证明，因此二者摘要不同。同标签的本地重新构建是另一份产物，不能自动沿用结论。
 
 - 镜像内 CPU：1,198 项及 691 个子测试通过，1 项 CUDA 专用 compact-verify 测试跳过。

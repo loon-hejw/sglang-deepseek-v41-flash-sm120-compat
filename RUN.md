@@ -59,6 +59,8 @@ The static memory fraction 0.80 failed to leave a KV pool after loading this mod
 
 ### Shared-host profile
 
+See the [test comparison overview](TESTING.md) ([中文](TESTING.zh-CN.md)) for measured configurations, the basis for retaining this profile and parameter sweeps that have not been run.
+
 The retained shared-host configuration uses TP4 / attention DP1 / EP2, DSPARK block 5, static memory fraction 0.85 and HiCache ratio 0.1. Select it explicitly after checking GPU and NUMA placement:
 
 ```bash

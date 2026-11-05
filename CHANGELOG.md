@@ -1,4 +1,16 @@
-# Local compatibility candidate v0.4.4-rc.3
+# Compatibility fork changelog
+
+## v0.4.4-rc.4 (candidate; 2026-11-03)
+
+The published candidate `ghcr.io/loon-hejw/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.4` preserves literal reasoning markers inside V4.1 tool bodies across stream chunks. The observed parser-caused argument changes are resolved in the recorded checks, while model-generated literal errors remain; this is not a stable-release qualification. The [publication receipt](compat/publication.json) identifies source commit `b808761fbef06cec27ce7b3afc55c372cefa78c1` and the unchanged tested Linux amd64 runtime manifest and layers.
+
+Installed-image CPU checks and a separate native CUDA suite passed within the [recorded scope](compat/validation.json). The repository also provides an opt-in coding request profile and a shared-host TP4 / attention DP1 / EP2 launcher profile. These later client/launcher changes do not rebuild the candidate or change global model-request defaults. Quality and partial performance results, unresolved literal generation and unfinished workloads are documented in [TESTING](TESTING.md).
+
+To use the retained deployment, pull the complete candidate reference with package-read credentials and follow [RUN](RUN.md#shared-host-profile). Parameter changes require a new container; preserve the previous container and cache for rollback as described in the [engineering handbook](docs/ENGINEERING.md). New image inputs require a new candidate version and independent validation; published tags remain immutable.
+
+## v0.4.4-rc.3 (historical build-stage snapshot)
+
+The following paragraph records the state at that build stage. Its deployment and validation status is historical, not the current candidate status; later deployment and test evidence is linked above.
 
 Ports missing 0731 correctness fixes onto the pinned V4.1 source: speculative penalties and committed-token accounting, tool argument completion, reasoning-marker fragments, routing-key preservation, warmup memory budgeting and bounded draft token ids. Adds CPU regressions and reproducible local build/validation entrypoints. Pre-installs the pinned FlashInfer source's compiler requirements and disables nested package installation in build hooks to avoid an installer-lock deadlock. Passes the intended Triton unit-test build setting through its supported CMake argument hook, avoiding an unused GoogleTest fetch. Built on Linux amd64 with installed-source and dependency gates passing; the installed CPU suite reports 895 passed and 1 skipped, including all 132 compatibility cases. The candidate is not deployed or GPU-validated; no performance improvement is claimed. Original contributor references are retained in `compat/migration.json`.
 

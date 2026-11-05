@@ -1,6 +1,6 @@
 # 1017 tests and parameter comparisons
 
-[中文完整说明](TESTING.zh-CN.md) · [README](README.md) · [Run guide](RUN.md)
+[中文完整说明](TESTING.zh-CN.md) · [README](README.md) · [Run guide](RUN.md) · [Engineering handbook](docs/ENGINEERING.md) · [Retrospective](docs/RETROSPECTIVE.md)
 
 This record covers experiments through 2026-11-03 and was compiled on 2026-11-04. The retained configuration is TP4 / attention DP1 / EP2 using `ghcr.io/loon-hejw/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.4`. It was selected from tested configurations, not an exhaustive optimum or stable-release qualification. Publishing these records changes no image, service or request defaults.
 

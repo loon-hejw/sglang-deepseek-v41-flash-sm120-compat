@@ -1,5 +1,7 @@
 # Running the validated compatibility TP4 profile
 
+For preparation, cache migration, upgrade/rollback and troubleshooting, use the [engineering handbook](docs/ENGINEERING.md) ([中文](docs/ENGINEERING.zh-CN.md)). This page remains the launcher and request-interface reference.
+
 Use `deepseek-ai/DeepSeek-V4.1-Flash-1017` at revision `1bae0e1088993b9b82de08f59de5be5a34e42170`. Pull the Linux amd64 candidate `ghcr.io/loon-hejw/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.4`, or build `local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.4` as described in [BUILDING.md](BUILDING.md). The published manifest digest is `sha256:0a32f40290db16a139ee2ac38ec4a8641b7310de07b79a249dd1c11d46a48a92`; see [compat/publication.json](compat/publication.json) for artifact identity and [compat/validation.json](compat/validation.json) for known limits. This candidate does not guarantee literal preservation in generated tool arguments.
 
 ## Launch and lifecycle

@@ -46,6 +46,12 @@ for name in TESTING.md TESTING.zh-CN.md; do
   require_text "$repo/$name" 'compat/topology-comparison-20261103.json'
   require_text "$repo/$name" 'compat/deployment-comparisons-20261103.json'
 done
+for suffix in '' .zh-CN; do
+  for topic in ENGINEERING RETROSPECTIVE; do
+    require_text "$repo/README${suffix}.md" "docs/${topic}${suffix}.md"
+    require_text "$repo/docs/${topic}${suffix}.md" "../TESTING${suffix}.md"
+  done
+done
 grep -Fx "IMAGE=\${IMAGE:-${image}}" "$launcher" >/dev/null
 for value in '--tp-size 4 --ep-size 2' '--speculative-algorithm DSPARK' \
   '--speculative-dspark-block-size 5' '--speculative-dspark-sps-autotune auto' \
@@ -63,7 +69,8 @@ from pathlib import Path
 import re
 import sys
 root = Path(sys.argv[1])
-files = list(root.glob('*.md')) + list((root/'examples').glob('*.sh')) + [root/'compat/validation.json']
+doc_files = sorted(root.glob('*.md')) + sorted((root/'docs').rglob('*.md'))
+files = doc_files + list((root/'examples').glob('*.sh')) + [root/'compat/validation.json']
 if (root/'compat/publication.json').exists():
     files.append(root/'compat/publication.json')
 if (root/'compat/topology-comparison-20261103.json').exists():
@@ -72,18 +79,18 @@ files.append(root/'compat/deployment-comparisons-20261103.json')
 patterns = [r'10\.216\.', r'harbor\.bhidi\.com', r'/Users/', r'~/git/',
             r'home\.[a-z0-9.-]+\.(?:com|net|org)', r'\u2014',
             r'gh[pousr]_[A-Za-z0-9]{20,}', r'github_pat_[A-Za-z0-9_]{20,}',
+            r'sk-[A-Za-z0-9_-]{20,}',
             r'-----BEGIN [A-Z ]*PRIVATE KEY-----']
 errors = []
 for path in files:
     for line, text in enumerate(path.read_text().splitlines(), 1):
         if any(re.search(pattern, text) for pattern in patterns):
             errors.append(f'{path.relative_to(root)}:{line}: private reference, credential pattern or em dash')
-for name in ['README.md','README.zh-CN.md','RUN.md','BUILDING.md','TESTING.md','TESTING.zh-CN.md']:
-    path=root/name
+for path in doc_files:
     for target in re.findall(r'\[[^\]]*\]\(([^)]+)\)', path.read_text()):
         if '://' in target or target.startswith(('#','mailto:')): continue
         if not (path.parent/target.split('#',1)[0]).exists():
-            errors.append(f'{name}: missing relative link {target}')
+            errors.append(f'{path.relative_to(root)}: missing relative link {target}')
 if errors: raise SystemExit('\n'.join(errors))
 PY
 printf 'documentation contract valid: compatibility %s, upstream %s, model %s\n' "$tag" "$published_tag" "$model"

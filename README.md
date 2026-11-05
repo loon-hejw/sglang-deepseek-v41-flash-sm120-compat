@@ -2,6 +2,20 @@
 
 A compatibility fork of [ormandj/sglang-deepseek-v41-flash-sm120](https://github.com/ormandj/sglang-deepseek-v41-flash-sm120), with applicable correctness fixes from the [0731 project](https://github.com/ombori/deepseek-v4-flash-0731-sglang-4x-rtx-pro-6000) and a validated four-GPU serving profile. [中文说明](README.zh-CN.md) · [Run guide](RUN.md) · [Test comparisons](TESTING.md) · [Validation record](compat/validation.json).
 
+## Documentation by task
+
+This project adapts the inference framework and operating profile for pinned model weights; it does not retrain or fine-tune the model.
+
+| Reader / task | Start here |
+| --- | --- |
+| First deployment | [Quick start](#quick-start), then [run guide](RUN.md) |
+| Operations and maintenance | [Engineering handbook](docs/ENGINEERING.md): sources, builds, resource planning, caches, migration, upgrade and rollback |
+| Understand the changes | [Engineering retrospective](docs/RETROSPECTIVE.md): problems, evidence, fixes and tradeoffs |
+| Evaluate measured behavior | [Test comparisons](TESTING.md): configurations, samples, results and unfinished work |
+| Build or publish a new artifact | [Build and publication rules](BUILDING.md), [changelog](CHANGELOG.md) |
+
+The handbook and retrospective also have complete [Chinese](docs/ENGINEERING.zh-CN.md) [versions](docs/RETROSPECTIVE.zh-CN.md). Tests and machine-readable records remain the source for measurements; the documents link to those records rather than defining separate results.
+
 ## Acknowledgments and provenance
 
 This work builds on two projects. We thank their maintainers and contributors for sharing the implementations, deployment recipes and validation work that made this fork possible:

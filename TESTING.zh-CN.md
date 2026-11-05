@@ -1,6 +1,6 @@
 # 1017 测试与参数对比
 
-[English](TESTING.md) · [项目说明](README.zh-CN.md) · [启动方法](RUN.md)
+[English](TESTING.md) · [项目说明](README.zh-CN.md) · [启动方法](RUN.md) · [工程手册](docs/ENGINEERING.zh-CN.md) · [技术复盘](docs/RETROSPECTIVE.zh-CN.md)
 
 本文汇总截至 2026-11-03 的实验，整理日期为 2026-11-04。保留配置为 TP4 / Attention DP1 / EP2，使用 `ghcr.io/loon-hejw/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.4`。这是已测方案中选定的部署配置，尚未遍历所有参数，也不代表稳定版验收。发布本记录不改变镜像、服务参数或请求默认值。
 

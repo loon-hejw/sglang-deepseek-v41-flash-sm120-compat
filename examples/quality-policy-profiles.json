@@ -1,0 +1,59 @@
+{
+  "schema": 1,
+  "qualified": false,
+  "experiment": "quality-policy-20261105",
+  "scope": "Task-specific request policies; existing server and model weights unchanged",
+  "profiles": {
+    "reasoning": {
+      "temperature": 1,
+      "top_p": 1,
+      "reasoning_effort": "high",
+      "max_tokens": 12288
+    },
+    "coding": {
+      "temperature": 1,
+      "top_p": 1,
+      "reasoning_effort": "low",
+      "max_tokens": 12288
+    },
+    "instructions": {
+      "temperature": 1,
+      "top_p": 1,
+      "reasoning_effort": "low",
+      "max_tokens": 2048
+    },
+    "structured": {
+      "temperature": 1,
+      "top_p": 1,
+      "reasoning_effort": "low",
+      "max_tokens": 2048
+    },
+    "tools": {
+      "temperature": 1,
+      "top_p": 1,
+      "reasoning_effort": "none",
+      "max_tokens": 4096
+    },
+    "long_context": {
+      "temperature": 1,
+      "top_p": 1,
+      "reasoning_effort": "low",
+      "max_tokens": 2048
+    },
+    "penalties": {
+      "temperature": 0.3,
+      "top_p": 1,
+      "reasoning_effort": "low",
+      "max_tokens": 2048
+    }
+  },
+  "evidence": "../compat/quality-policy-20261105.json",
+  "qualification": {
+    "quality": true,
+    "speed": true,
+    "legacy": true,
+    "controls": false,
+    "parser_cpu": true
+  },
+  "explicit_request_fields_override_profiles": true
+}

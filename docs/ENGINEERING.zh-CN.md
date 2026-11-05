@@ -173,6 +173,8 @@ INFERENCE_BASE_URL=http://127.0.0.1:18001/v1 python3 examples/code-request.py --
 
 鉴权环境变量为 `INFERENCE_API_KEY`。客户端默认补充 temperature 1、reasoning_effort low、top_p 1、max_tokens 12288，保留显式覆盖；截断、异常结束或空正文会报错，不把推理正文当代码，也不自动重试。生成代码仍需应用自身测试。
 
+思考开关与默认强度是两回事。未设置 `SGLANG_DEFAULT_THINKING` 时，同时省略强度与思考开关会进入非思考模式；显式传入非 none 强度会启用思考，除非调用方显式关闭。[质量策略说明](QUALITY.zh-CN.md)记录了实际编码核对、分任务预设和留出验收，不改变服务默认值。
+
 ## 6. 缓存、重启和更换主机
 
 | 对象 | 复用边界 |

@@ -1,11 +1,13 @@
 """Guard against optimistic scoring, answer leakage and holdout selection bugs."""
 import io
+from concurrent.futures import ThreadPoolExecutor
 import json
 import sys
 import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
+from types import SimpleNamespace
 
 sys.path.insert(0,str(Path(__file__).resolve().parent))
 from quality_eval import cases,grading,policy
@@ -53,6 +55,20 @@ class EvaluationTests(unittest.TestCase):
         self.assertTrue(grading.grade(c,r)['passed'])
         r['tools'][0]['arguments']=json.dumps({'note':'</think>literal</think>','count':0})
         self.assertFalse(grading.grade(c,r)['passed'])
+
+    def test_identical_code_grades_own_distinct_containers(self):
+        calls=[]
+        def fake_run(cmd,**kwargs):
+            calls.append(cmd)
+            return SimpleNamespace(returncode=0,stdout='{"tests":1,"passed":1}')
+        case={'id':'same_case','function':'f','tests':[([],1)]}
+        with patch.object(grading,'SANDBOX_IMAGE','local-test-image'),patch.object(grading.subprocess,'run',side_effect=fake_run):
+            with ThreadPoolExecutor(max_workers=4) as pool:
+                results=list(pool.map(lambda _:grading.grade_code(case,'def f(): return 1'),range(4)))
+        names=[cmd[cmd.index('--name')+1] for cmd in calls if cmd[1]=='run']
+        cleanup=[cmd[-1] for cmd in calls if cmd[1]=='rm']
+        self.assertEqual(len(names),4);self.assertEqual(len(set(names)),4)
+        self.assertCountEqual(names,cleanup);self.assertTrue(all(r['passed']==1 for r in results))
 
     def test_request_controls_override_case_defaults(self):
         cl=Client('http://localhost/v1','model')
@@ -107,6 +123,14 @@ class EvaluationTests(unittest.TestCase):
         self.assertEqual(json.dumps(winners,sort_keys=True),before)
         ids=[t['task_id'] for tasks in captured.values() for t in tasks]
         self.assertEqual(len(ids),len(set(ids)))
+
+    def test_checkpoint_stop_precedes_new_model_requests(self):
+        with tempfile.TemporaryDirectory() as directory:
+            e=Experiment.__new__(Experiment);e.root=Path(directory);e.done=set()
+            (e.root/'STOP_AFTER_BATCH').touch()
+            e.one=lambda task:self.fail('A new model request must not start after a checkpoint stop')
+            with self.assertRaisesRegex(RuntimeError,'checkpoint stop'):
+                e.run_tasks('holdout',[{'task_id':'pending','category':'coding'}])
 
     def test_export_excludes_raw_answers_and_tool_arguments(self):
         with tempfile.TemporaryDirectory() as directory:

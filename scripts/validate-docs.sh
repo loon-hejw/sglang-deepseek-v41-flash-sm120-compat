@@ -76,6 +76,8 @@ if (root/'compat/publication.json').exists():
 if (root/'compat/topology-comparison-20261103.json').exists():
     files.append(root/'compat/topology-comparison-20261103.json')
 files.append(root/'compat/deployment-comparisons-20261103.json')
+files.extend(sorted((root/'compat').glob('quality-policy-*.json')))
+files.extend(sorted((root/'examples').glob('quality-*.json')))
 patterns = [r'10\.216\.', r'harbor\.bhidi\.com', r'/Users/', r'~/git/',
             r'home\.[a-z0-9.-]+\.(?:com|net|org)', r'\u2014',
             r'gh[pousr]_[A-Za-z0-9]{20,}', r'github_pat_[A-Za-z0-9_]{20,}',

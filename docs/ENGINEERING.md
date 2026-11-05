@@ -173,6 +173,8 @@ INFERENCE_BASE_URL=http://127.0.0.1:18001/v1 python3 examples/code-request.py --
 
 The authentication variable is `INFERENCE_API_KEY`. The client fills temperature 1, reasoning effort low, top_p 1 and max_tokens 12288 while preserving explicit overrides. Truncation, abnormal termination or empty final content is an error; reasoning is not promoted to code and no retry is automatic. Run application tests on generated code.
 
+Thinking activation is separate from its default strength. With `SGLANG_DEFAULT_THINKING` unset, omitting both the effort and thinking toggle uses chat mode; supplying a non-none effort enables thinking unless the caller explicitly disables it. The [quality-policy guide](QUALITY.md) documents measured encoding checks, task-specific profiles and held-out qualification. It does not change server defaults.
+
 ## 6. Caches, restarts and moving hosts
 
 | Object | Reuse boundary |

@@ -118,10 +118,16 @@ The profile was selected from eight small coding tasks repeated five times in ea
 
 The coding profile is not a literal-tool preservation policy. A separate 100-request literal diagnostic per DSPARK mode using `reasoning_effort=low` passed only 17 requests with DSPARK disabled and 19 enabled. Keep exact-preservation requirements explicit in the application; this repository does not silently reconstruct arguments from prompts or enable retries that replace the original result.
 
+### Quality-first requests
+
+Thinking activation and effort are separate. With `SGLANG_DEFAULT_THINKING` unset, a request that omits both `reasoning_effort` and the thinking toggle uses chat mode. An explicit non-none effort enables thinking unless the caller explicitly disables it. High is the default strength when thinking is enabled without an effort override; it is not a promise that an unspecified request is thinking. See [quality policies](docs/QUALITY.md) for the measured encoding check, request client, selection procedure and qualification rules.
+
+The measured task-policy bundle is experimental: its held-out quality and speed gates passed, but its nonstream literal-tool control did not satisfy the no-regression rule. The [quality client](examples/quality-request.py) requires explicit `--experimental` use and preserves caller overrides. Keep the existing server defaults; the profile does not repair reserved literals generated incorrectly by the model.
+
 ### Context and cache behavior
 
 The 1M limit is per request; all requests share the device KV pool. The candidate workload comparison included inputs up to 160,054 tokens and concurrency 1/4, not full 1M stress or a capacity benchmark. See the [validation record](compat/validation.json) for the exact artifact, configuration and limitations.
 
-For the earlier `local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.3` artifact, the empty-cache first start took 2343 seconds on the qualified host, including compilation, CUDA Graph capture and automatic SPS profiling. Later starts can reuse compatible compilation artifacts and SPS tables, but still load weights and capture process-local CUDA Graphs. No timed warm-restart measurement has been made. Preserve the cache bind mount; a different image, GPU architecture or key configuration may invalidate entries. On a new host, measure SPS again rather than assuming identical GPU models imply identical communication costs.
+For the earlier `local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.3` artifact, the empty-cache first start took 2343 seconds on the qualified host, including compilation, CUDA Graph capture and automatic SPS profiling. Later starts can reuse compatible compilation artifacts and SPS tables, but still load weights and capture process-local CUDA Graphs. No controlled warm-restart benchmark has been made. Preserve the cache bind mount; a different image, GPU architecture or key configuration may invalidate entries. On a new host, measure SPS again rather than assuming identical GPU models imply identical communication costs.
 
 `examples/serve-deepseek-v41-flash-tp4.sh` is retained as the upstream baseline recipe and defaults to `ghcr.io/ormandj/sglang-deepseek-v41-flash-sm120:v0.4.3`. Use the compatibility launcher above for this fork.

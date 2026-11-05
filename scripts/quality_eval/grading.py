@@ -1,9 +1,9 @@
 """Objective graders; generated code runs only in an isolated CPU container."""
-import hashlib
 import json
 import os
 import re
 import subprocess
+import uuid
 
 SANDBOX_IMAGE = None
 
@@ -62,7 +62,9 @@ def grade_code(case,text):
     except SyntaxError:return {'tests':len(case['tests']),'passed':0,'error_type':'SyntaxError'}
     payload={'code':code,'function':case['function'],'tests':case['tests'],'ordered_keys':case.get('ordered_keys',False),
              'immutable':case.get('immutable',case['id'] in ['code_merge_intervals','code_last_occurrence'])}
-    name='quality-code-'+str(os.getpid())+'-'+hashlib.sha256((case['id']+text).encode()).hexdigest()[:12]
+    # Identical completions can be graded concurrently for paired repetitions.
+    # Each invocation owns its container, including its unconditional cleanup.
+    name='quality-code-'+str(os.getpid())+'-'+uuid.uuid4().hex
     cmd=['docker','run','--rm','--name',name,'--runtime','runc','--network','none',
          '--read-only','--cap-drop','ALL','--security-opt','no-new-privileges',
          '--memory','512m','--memory-swap','512m','--cpus','1','--pids-limit','32',

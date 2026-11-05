@@ -46,6 +46,8 @@ class Experiment:
                 'Only 21 problem families: seven selection and fourteen holdout; instances within a family are correlated',
                 'No full 1M input validation','Format compliance is not semantic correctness',
                 'More thinking tokens can change token/s without improving useful final output; latency and first-answer time reported separately']}
+        if (self.root/'continuation.json').exists():
+            self.method['continuation']=json.loads((self.root/'continuation.json').read_text())
         mf=self.root/'methodology.json'
         if mf.exists():assert json.loads(mf.read_text())==self.method,'Experiment methodology/source changed; use a new output directory'
         else:save(mf,self.method)
@@ -96,6 +98,8 @@ class Experiment:
         todo=[t for t in tasks if t['task_id'] not in self.done];random.Random(20261105).shuffle(todo)
         total=len(tasks);errors=0
         while todo:
+            if (self.root/'STOP_AFTER_BATCH').exists():
+                raise RuntimeError('Operator checkpoint stop; all completed observations retained')
             batch=[todo.pop(0)]
             if batch[0]['category']!='long_context':
                 while todo and len(batch)<4 and todo[0]['category']!='long_context':batch.append(todo.pop(0))

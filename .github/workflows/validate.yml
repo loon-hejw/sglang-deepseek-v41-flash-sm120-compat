@@ -27,11 +27,15 @@ jobs:
       - name: Check shell syntax
         run: bash -n scripts/*.sh build/*.sh examples/*.sh
       - name: Check JSON syntax
-        run: jq -e . release.json stack.lock.json examples/code-request-profile.json >/dev/null
+        run: jq -e . release.json stack.lock.json examples/code-request-profile.json examples/quality-policy-profiles.json compat/quality-policy-20261105*.json >/dev/null
       - name: Verify TP4 launcher without Docker
         run: python3 scripts/test_serve_compat_tp4.py
       - name: Verify coding request overrides and incomplete answers
         run: python3 scripts/test_code_request.py
+      - name: Verify quality evaluation contracts
+        run: |
+          python3 scripts/test_quality_eval.py
+          python3 scripts/test_quality_request.py
       - name: Test release publication tooling
         run: |
           python3 scripts/test_validate_publish_release.py

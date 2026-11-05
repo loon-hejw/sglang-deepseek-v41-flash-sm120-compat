@@ -2,7 +2,7 @@
 
 [中文完整说明](TESTING.zh-CN.md) · [README](README.md) · [Run guide](RUN.md) · [Engineering handbook](docs/ENGINEERING.md) · [Retrospective](docs/RETROSPECTIVE.md)
 
-This record covers experiments through 2026-11-03 and was compiled on 2026-11-04. The retained configuration is TP4 / attention DP1 / EP2 using `ghcr.io/loon-hejw/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.4`. It was selected from tested configurations, not an exhaustive optimum or stable-release qualification. Publishing these records changes no image, service or request defaults.
+This record covers experiments through 2026-11-05. The retained configuration is TP4 / attention DP1 / EP2 using `ghcr.io/loon-hejw/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.4`. It was selected from tested configurations, not an exhaustive optimum or stable-release qualification. Publishing these records changes no image, service or request defaults.
 
 ## Evidence and hardware
 
@@ -11,13 +11,14 @@ This record covers experiments through 2026-11-03 and was compiled on 2026-11-04
 | [Validation](compat/validation.json) | Build, CPU/CUDA checks, DSPARK modes, coding profiles and literal-generation diagnosis |
 | [Topology comparison](compat/topology-comparison-20261103.json) | Exact configurations, 204 quality requests, 18 completed speed batches and unfinished work |
 | [Deployment comparisons](compat/deployment-comparisons-20261103.json) | Original-framework control, 0731 comparison, artifact identities, category scores and 24 speed batches |
+| [Quality policies](compat/quality-policy-20261105.json) | Frozen selection, 1,400 held-out observations, regression controls, 140 speed batches and qualification decision |
 | [Publication receipt](compat/publication.json) | Relationship between measured and published artifacts |
 
 Each instance used four NVIDIA RTX PRO 6000 Blackwell 96 GB GPUs, PCIe P2P and no NVLink. The host had two Intel Xeon Platinum 8480+ CPUs, 503 GiB RAM, driver 610.43.02 and 600 W GPU power limits. Side-by-side experiments used separate four-GPU groups and corresponding NUMA memory nodes on one eight-GPU host.
 
-The model was `deepseek-ai/DeepSeek-V4.1-Flash-1017` at revision `1bae0e1088993b9b82de08f59de5be5a34e42170`. Candidate source was `b808761fbef06cec27ce7b3afc55c372cefa78c1`; the published Linux amd64 manifest is `sha256:0a32f40290db16a139ee2ac38ec4a8641b7310de07b79a249dd1c11d46a48a92`. Quality experiments measured the separately built `local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.4`. Publication reused its runtime manifest, configuration and every layer without rebuilding. Its local OCI index also contained a build attestation, so the index digest differs from the published platform manifest; see the receipt.
+The model was `deepseek-ai/DeepSeek-V4.1-Flash-1017` at revision `1bae0e1088993b9b82de08f59de5be5a34e42170`. Candidate source was `b808761fbef06cec27ce7b3afc55c372cefa78c1`; the published Linux amd64 manifest is `sha256:0a32f40290db16a139ee2ac38ec4a8641b7310de07b79a249dd1c11d46a48a92`. Earlier quality experiments measured the separately built `local/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.4`. Publication reused its runtime manifest, configuration and every layer without rebuilding. Its local OCI index also contained a build attestation, so the index digest differs from the published platform manifest; see the receipt.
 
-Quality checks cover reasoning, coding, instructions, structured output, tools, long input and sampling penalties. After excluding one ambiguous question symmetrically, each main comparison used 51 valid cases at temperatures 0/1, or 102 requests per configuration. Truncation, empty final answers and wrong formats/types can fail a request. Failure repeats never replace primary scores. Each experiment is a separate run; do not pool its pass rate with another run.
+Quality checks cover reasoning, coding, instructions, structured output, tools, long input and sampling penalties. After excluding one ambiguous question symmetrically, each earlier main comparison used 51 valid cases at temperatures 0/1, or 102 requests per configuration. The new quality-policy experiment adds separate selection and held-out families, described below. Truncation, empty final answers and wrong formats/types can fail a request. Failure repeats never replace primary scores. Each experiment is a separate run; do not pool its pass rate with another run.
 
 API seeds were recorded, but deterministic inference was disabled. Identical seeds do not establish identical random streams. These small synthetic sets are not official benchmarks, general quality rankings or proof of sampling-distribution equivalence.
 
@@ -47,6 +48,14 @@ Each profile used eight small coding tasks repeated five times at concurrency 1,
 | 1 | none | 38/40; 0 truncated | 39/40; 0 truncated |
 
 The predefined rule chose the [temperature 1 / low preset](examples/code-request-profile.json). It is opt-in per request, not a global default. Low reasoning is a model instruction, not a hard final-code token reservation. All 80 low-profile requests passed, which does not establish correctness on larger workloads. No-thinking failures also show a possible correctness tradeoff.
+
+## Quality-first policies
+
+The 2026-11-05 experiment kept the published image, model and TP4 / attention DP1 / EP2 server settings fixed. It selected task-specific effort, temperature and output budgets on 70 synthetic instances, then evaluated 140 different-family instances five times per arm. Including API probes, selection, holdout and regression controls, 2,979 observations completed; a separate C1/C4 speed check completed 140 batches.
+
+Held-out scores were 388/700 (55.43%) and 511/700 (73.00%). The category-equal gain was +17.57 percentage points, with a family-bootstrap 95% interval of +5.00 to +30.57 points. Instructions, structured output and long inputs improved after enabling low effort. All speed comparisons retained at least 92.74% of baseline completion token/s including reasoning, but final-answer waiting time increased for those changed profiles.
+
+**The bundle remains experimental:** the nonstream reserved-literal tool control scored 2/60 versus 1/60 and failed the predeclared no-regression gate, even though both arms used identical tool parameters. Legacy regression was 98/102 versus 99/102; the low-effort code control was 40/40 on both sides; all 279 framework CPU checks passed. The original server and request defaults remain unchanged. [Full results and reproduction](docs/QUALITY.md) include individual categories, truncation, latency, frozen settings, harness-continuation provenance and all acceptance rules. The [request client](examples/quality-request.py) requires `--experimental` for this unqualified bundle.
 
 ## Further literal diagnosis
 
@@ -102,7 +111,7 @@ Models, frameworks, parallelism, DSPARK, caches and resource limits differ; this
 
 ## What has not been tuned
 
-- Context limit 1M versus 256K under the same workload. Inputs of 20,054 / 40,054 / 80,054 / 160,054 tokens were checked with the limit kept at 1M.
+- Context limit 1M versus 256K under the same workload. Earlier inputs reached 160,054 tokens; the quality-policy experiment reached 262,132, with the limit kept at 1M.
 - TP4 versus TP8. Two four-GPU instances do not constitute TP8.
 - DSPARK block 5/7 or other values on the same 1017 model, or SPS auto versus manual policies in isolation.
 - Independent performance sweeps of HiCache, FP8/BF16 KV, prefill, running-request limits, CPU/NUMA or THP.
@@ -115,4 +124,4 @@ Frequency, presence and repetition penalties were checked for correctness, not t
 
 Follow the [shared-host run guide](RUN.md#shared-host-profile), choosing a NUMA memory node appropriate for the GPUs. The coding preset is a separate request option. New hardware, builds or workloads require their own validation.
 
-Public records contain parameters, artifact identities, numerical summaries and evidence hashes, excluding private addresses, credentials, model weights and raw conversations. Summaries alone do not reproduce every request. The [API checker](scripts/validate-gpu.py), [CPU checks](scripts/test-compat.sh) and [native CUDA checks](compat/test_gpu_native.py) support independent validation, not automatic replay of all historical experiments. Attribution is preserved in [NOTICE.md](NOTICE.md).
+Public records contain parameters, artifact identities, numerical summaries and evidence hashes, excluding private addresses, credentials, model weights and raw conversations. Historical summaries alone do not reproduce every request; the new [quality runner](scripts/quality_eval/run.py) includes synthetic fixtures and frozen methodology for independent reproduction. The [API checker](scripts/validate-gpu.py), [CPU checks](scripts/test-compat.sh) and [native CUDA checks](compat/test_gpu_native.py) support independent validation, not automatic replay of all historical experiments. Attribution is preserved in [NOTICE.md](NOTICE.md).

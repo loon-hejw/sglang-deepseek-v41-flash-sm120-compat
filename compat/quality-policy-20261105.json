@@ -1,0 +1,3140 @@
+{
+  "methodology": {
+    "version": "quality-policy-20261105-v1",
+    "model": "deepseek-v4.1-flash-1017",
+    "source_sha256": {
+      "cases.py": "364602a65b2246875dc4d988ac3e21983dc8010d914ed9efeae57cb25f03eb52",
+      "run.py": "820443b304948bb83224a6bf304dac4fe71c61249e612168b54aa18e3b191a82",
+      "grading.py": "736ec15ee266df5cdc6051f5c0cd7a2f99ef8c08a8644d2648c6731de7e2e1e4",
+      "legacy_cases.py": "f718959d771b08950f6f76f1b60af8e29da913ba48c36ba7308234dfc7102091",
+      "policy.py": "761b57d907291a4c602f124e58b8061bd2eaa9e2fc0afdfe2f24ca5b2fe0965c",
+      "__init__.py": "81faff2fa9872c3c5280db262ea3329d646720ae2aa8e3f86876dbe080e89d2e",
+      "client.py": "def2f6c887319a1b7b40c032dc733154470a294785cc389d65b43a249f6f3b2a"
+    },
+    "new_cases": 210,
+    "selection_cases": 70,
+    "holdout_cases": 140,
+    "families": 21,
+    "selection_repetitions": 3,
+    "holdout_repetitions": 5,
+    "legacy_cases": 51,
+    "primary_baseline": "T1, top_p1; coding low, reasoning high, other none; budgets 12288/4096/2048",
+    "quality_concurrency": "Up to four mixed-profile requests; long-context requests singly. Both arms share one server.",
+    "request_deadline_s": 900,
+    "first_token": "First nonempty content/reasoning/tool delta, not first SSE frame",
+    "first_answer": "First nonempty final-content/tool delta; separate from reasoning",
+    "speed": "Per-category fixed selection prompt, 1024 output-token cap; 4 warmups per arm; C1/C4, five alternating paired batches per workload. Completion tokens include reasoning; divided by batch wall time including TTFT. Warm-prefix tests; no cache flush.",
+    "seed_note": "Supplied seeds are paired; backend deterministic inference is not enabled.",
+    "selection_ties": "Higher pass rate, fewer truncations, baseline first, then lower budget/effort/temperature closest to one",
+    "quality_gate": {
+      "macro_delta_min": 0.03,
+      "family_bootstrap_ci95_lower_gt": 0,
+      "max_category_decline": 0.02
+    },
+    "speed_gate": {
+      "minimum_ratio_per_category_and_concurrency": 0.8
+    },
+    "no_automatic_retry": true,
+    "no_holdout_retuning": true,
+    "smoke_gate": "API completion, nonzero usage and thinking-mode effectiveness; wrong answers are retained, not startup failures",
+    "limitations": [
+      "Synthetic tasks, not an official benchmark or real production traffic",
+      "Only 21 problem families: seven selection and fourteen holdout; instances within a family are correlated",
+      "No full 1M input validation",
+      "Format compliance is not semantic correctness",
+      "More thinking tokens can change token/s without improving useful final output; latency and first-answer time reported separately"
+    ],
+    "continuation": {
+      "parent_run": "quality-policy-20261105-v2",
+      "parent_source_commit": "edf77d7c1ccab46201c1be9c8d1317c77c3517b2",
+      "parent_source_sha256": {
+        "cases.py": "364602a65b2246875dc4d988ac3e21983dc8010d914ed9efeae57cb25f03eb52",
+        "run.py": "5c4d6c633c1c68d13d60132e0987903bffd61f2df6732bf88bfc33aff8d9deee",
+        "grading.py": "f4f1126901ab8b7be6c5db4dd32a33e2f98d1fc08b141297bc0cb31fcaf14b9b",
+        "legacy_cases.py": "f718959d771b08950f6f76f1b60af8e29da913ba48c36ba7308234dfc7102091",
+        "policy.py": "761b57d907291a4c602f124e58b8061bd2eaa9e2fc0afdfe2f24ca5b2fe0965c",
+        "__init__.py": "81faff2fa9872c3c5280db262ea3329d646720ae2aa8e3f86876dbe080e89d2e",
+        "client.py": "def2f6c887319a1b7b40c032dc733154470a294785cc389d65b43a249f6f3b2a"
+      },
+      "parent_raw_results_sha256": "cd588977213d06ef7779cefbd170b3e2c73a543f08cea611234580a9ee65395c",
+      "inherited_observations": 1392,
+      "inherited_task_ids_sha256": "a672a82f583fe8271ab9b3ace36000b53eb24fb4162414c551a95922b4202e9a",
+      "reason": "Unique per-invocation Docker names prevent concurrent identical-code grading from sharing a container. Added provenance and cooperative checkpoint stopping. Model requests, fixtures, selected profiles and acceptance gates unchanged.",
+      "stop_method": "Paused at the next status-write checkpoint after every active request was saved; no model generation was interrupted and no completed score was replaced.",
+      "docker_name_conflict_failures_observed_before_fix": 0,
+      "request_retries": 0,
+      "resume_order": "The documented runner reshuffles only remaining tasks using its fixed seed; actual concurrency is recorded per observation."
+    }
+  },
+  "cases_manifest": {
+    "suite_sha256": "19b42153f0ca25abe64edc1fd1226a89bbd40aa2d1993f0e289d003eacfc7fba",
+    "cases": [
+      {
+        "id": "reasoning_s_weighted_intervals_00",
+        "category": "reasoning",
+        "family": "reasoning/s_weighted_intervals",
+        "split": "selection"
+      },
+      {
+        "id": "reasoning_h_rounding_ledger_00",
+        "category": "reasoning",
+        "family": "reasoning/h_rounding_ledger",
+        "split": "holdout"
+      },
+      {
+        "id": "reasoning_h_coupon_path_00",
+        "category": "reasoning",
+        "family": "reasoning/h_coupon_path",
+        "split": "holdout"
+      },
+      {
+        "id": "reasoning_s_weighted_intervals_01",
+        "category": "reasoning",
+        "family": "reasoning/s_weighted_intervals",
+        "split": "selection"
+      },
+      {
+        "id": "reasoning_h_rounding_ledger_01",
+        "category": "reasoning",
+        "family": "reasoning/h_rounding_ledger",
+        "split": "holdout"
+      },
+      {
+        "id": "reasoning_h_coupon_path_01",
+        "category": "reasoning",
+        "family": "reasoning/h_coupon_path",
+        "split": "holdout"
+      },
+      {
+        "id": "reasoning_s_weighted_intervals_02",
+        "category": "reasoning",
+        "family": "reasoning/s_weighted_intervals",
+        "split": "selection"
+      },
+      {
+        "id": "reasoning_h_rounding_ledger_02",
+        "category": "reasoning",
+        "family": "reasoning/h_rounding_ledger",
+        "split": "holdout"
+      },
+      {
+        "id": "reasoning_h_coupon_path_02",
+        "category": "reasoning",
+        "family": "reasoning/h_coupon_path",
+        "split": "holdout"
+      },
+      {
+        "id": "reasoning_s_weighted_intervals_03",
+        "category": "reasoning",
+        "family": "reasoning/s_weighted_intervals",
+        "split": "selection"
+      },
+      {
+        "id": "reasoning_h_rounding_ledger_03",
+        "category": "reasoning",
+        "family": "reasoning/h_rounding_ledger",
+        "split": "holdout"
+      },
+      {
+        "id": "reasoning_h_coupon_path_03",
+        "category": "reasoning",
+        "family": "reasoning/h_coupon_path",
+        "split": "holdout"
+      },
+      {
+        "id": "reasoning_s_weighted_intervals_04",
+        "category": "reasoning",
+        "family": "reasoning/s_weighted_intervals",
+        "split": "selection"
+      },
+      {
+        "id": "reasoning_h_rounding_ledger_04",
+        "category": "reasoning",
+        "family": "reasoning/h_rounding_ledger",
+        "split": "holdout"
+      },
+      {
+        "id": "reasoning_h_coupon_path_04",
+        "category": "reasoning",
+        "family": "reasoning/h_coupon_path",
+        "split": "holdout"
+      },
+      {
+        "id": "reasoning_s_weighted_intervals_05",
+        "category": "reasoning",
+        "family": "reasoning/s_weighted_intervals",
+        "split": "selection"
+      },
+      {
+        "id": "reasoning_h_rounding_ledger_05",
+        "category": "reasoning",
+        "family": "reasoning/h_rounding_ledger",
+        "split": "holdout"
+      },
+      {
+        "id": "reasoning_h_coupon_path_05",
+        "category": "reasoning",
+        "family": "reasoning/h_coupon_path",
+        "split": "holdout"
+      },
+      {
+        "id": "reasoning_s_weighted_intervals_06",
+        "category": "reasoning",
+        "family": "reasoning/s_weighted_intervals",
+        "split": "selection"
+      },
+      {
+        "id": "reasoning_h_rounding_ledger_06",
+        "category": "reasoning",
+        "family": "reasoning/h_rounding_ledger",
+        "split": "holdout"
+      },
+      {
+        "id": "reasoning_h_coupon_path_06",
+        "category": "reasoning",
+        "family": "reasoning/h_coupon_path",
+        "split": "holdout"
+      },
+      {
+        "id": "reasoning_s_weighted_intervals_07",
+        "category": "reasoning",
+        "family": "reasoning/s_weighted_intervals",
+        "split": "selection"
+      },
+      {
+        "id": "reasoning_h_rounding_ledger_07",
+        "category": "reasoning",
+        "family": "reasoning/h_rounding_ledger",
+        "split": "holdout"
+      },
+      {
+        "id": "reasoning_h_coupon_path_07",
+        "category": "reasoning",
+        "family": "reasoning/h_coupon_path",
+        "split": "holdout"
+      },
+      {
+        "id": "reasoning_s_weighted_intervals_08",
+        "category": "reasoning",
+        "family": "reasoning/s_weighted_intervals",
+        "split": "selection"
+      },
+      {
+        "id": "reasoning_h_rounding_ledger_08",
+        "category": "reasoning",
+        "family": "reasoning/h_rounding_ledger",
+        "split": "holdout"
+      },
+      {
+        "id": "reasoning_h_coupon_path_08",
+        "category": "reasoning",
+        "family": "reasoning/h_coupon_path",
+        "split": "holdout"
+      },
+      {
+        "id": "reasoning_s_weighted_intervals_09",
+        "category": "reasoning",
+        "family": "reasoning/s_weighted_intervals",
+        "split": "selection"
+      },
+      {
+        "id": "reasoning_h_rounding_ledger_09",
+        "category": "reasoning",
+        "family": "reasoning/h_rounding_ledger",
+        "split": "holdout"
+      },
+      {
+        "id": "reasoning_h_coupon_path_09",
+        "category": "reasoning",
+        "family": "reasoning/h_coupon_path",
+        "split": "holdout"
+      },
+      {
+        "id": "coding_s_reconcile_00",
+        "category": "coding",
+        "family": "coding/s_reconcile",
+        "split": "selection"
+      },
+      {
+        "id": "coding_h_escaped_glob_00",
+        "category": "coding",
+        "family": "coding/h_escaped_glob",
+        "split": "holdout"
+      },
+      {
+        "id": "coding_h_coupon_solver_00",
+        "category": "coding",
+        "family": "coding/h_coupon_solver",
+        "split": "holdout"
+      },
+      {
+        "id": "coding_s_reconcile_01",
+        "category": "coding",
+        "family": "coding/s_reconcile",
+        "split": "selection"
+      },
+      {
+        "id": "coding_h_escaped_glob_01",
+        "category": "coding",
+        "family": "coding/h_escaped_glob",
+        "split": "holdout"
+      },
+      {
+        "id": "coding_h_coupon_solver_01",
+        "category": "coding",
+        "family": "coding/h_coupon_solver",
+        "split": "holdout"
+      },
+      {
+        "id": "coding_s_reconcile_02",
+        "category": "coding",
+        "family": "coding/s_reconcile",
+        "split": "selection"
+      },
+      {
+        "id": "coding_h_escaped_glob_02",
+        "category": "coding",
+        "family": "coding/h_escaped_glob",
+        "split": "holdout"
+      },
+      {
+        "id": "coding_h_coupon_solver_02",
+        "category": "coding",
+        "family": "coding/h_coupon_solver",
+        "split": "holdout"
+      },
+      {
+        "id": "coding_s_reconcile_03",
+        "category": "coding",
+        "family": "coding/s_reconcile",
+        "split": "selection"
+      },
+      {
+        "id": "coding_h_escaped_glob_03",
+        "category": "coding",
+        "family": "coding/h_escaped_glob",
+        "split": "holdout"
+      },
+      {
+        "id": "coding_h_coupon_solver_03",
+        "category": "coding",
+        "family": "coding/h_coupon_solver",
+        "split": "holdout"
+      },
+      {
+        "id": "coding_s_reconcile_04",
+        "category": "coding",
+        "family": "coding/s_reconcile",
+        "split": "selection"
+      },
+      {
+        "id": "coding_h_escaped_glob_04",
+        "category": "coding",
+        "family": "coding/h_escaped_glob",
+        "split": "holdout"
+      },
+      {
+        "id": "coding_h_coupon_solver_04",
+        "category": "coding",
+        "family": "coding/h_coupon_solver",
+        "split": "holdout"
+      },
+      {
+        "id": "coding_s_reconcile_05",
+        "category": "coding",
+        "family": "coding/s_reconcile",
+        "split": "selection"
+      },
+      {
+        "id": "coding_h_escaped_glob_05",
+        "category": "coding",
+        "family": "coding/h_escaped_glob",
+        "split": "holdout"
+      },
+      {
+        "id": "coding_h_coupon_solver_05",
+        "category": "coding",
+        "family": "coding/h_coupon_solver",
+        "split": "holdout"
+      },
+      {
+        "id": "coding_s_reconcile_06",
+        "category": "coding",
+        "family": "coding/s_reconcile",
+        "split": "selection"
+      },
+      {
+        "id": "coding_h_escaped_glob_06",
+        "category": "coding",
+        "family": "coding/h_escaped_glob",
+        "split": "holdout"
+      },
+      {
+        "id": "coding_h_coupon_solver_06",
+        "category": "coding",
+        "family": "coding/h_coupon_solver",
+        "split": "holdout"
+      },
+      {
+        "id": "coding_s_reconcile_07",
+        "category": "coding",
+        "family": "coding/s_reconcile",
+        "split": "selection"
+      },
+      {
+        "id": "coding_h_escaped_glob_07",
+        "category": "coding",
+        "family": "coding/h_escaped_glob",
+        "split": "holdout"
+      },
+      {
+        "id": "coding_h_coupon_solver_07",
+        "category": "coding",
+        "family": "coding/h_coupon_solver",
+        "split": "holdout"
+      },
+      {
+        "id": "coding_s_reconcile_08",
+        "category": "coding",
+        "family": "coding/s_reconcile",
+        "split": "selection"
+      },
+      {
+        "id": "coding_h_escaped_glob_08",
+        "category": "coding",
+        "family": "coding/h_escaped_glob",
+        "split": "holdout"
+      },
+      {
+        "id": "coding_h_coupon_solver_08",
+        "category": "coding",
+        "family": "coding/h_coupon_solver",
+        "split": "holdout"
+      },
+      {
+        "id": "coding_s_reconcile_09",
+        "category": "coding",
+        "family": "coding/s_reconcile",
+        "split": "selection"
+      },
+      {
+        "id": "coding_h_escaped_glob_09",
+        "category": "coding",
+        "family": "coding/h_escaped_glob",
+        "split": "holdout"
+      },
+      {
+        "id": "coding_h_coupon_solver_09",
+        "category": "coding",
+        "family": "coding/h_coupon_solver",
+        "split": "holdout"
+      },
+      {
+        "id": "instructions_s_filter_sort_00",
+        "category": "instructions",
+        "family": "instructions/s_filter_sort",
+        "split": "selection"
+      },
+      {
+        "id": "instructions_h_escape_pipeline_00",
+        "category": "instructions",
+        "family": "instructions/h_escape_pipeline",
+        "split": "holdout"
+      },
+      {
+        "id": "instructions_h_access_rules_00",
+        "category": "instructions",
+        "family": "instructions/h_access_rules",
+        "split": "holdout"
+      },
+      {
+        "id": "instructions_s_filter_sort_01",
+        "category": "instructions",
+        "family": "instructions/s_filter_sort",
+        "split": "selection"
+      },
+      {
+        "id": "instructions_h_escape_pipeline_01",
+        "category": "instructions",
+        "family": "instructions/h_escape_pipeline",
+        "split": "holdout"
+      },
+      {
+        "id": "instructions_h_access_rules_01",
+        "category": "instructions",
+        "family": "instructions/h_access_rules",
+        "split": "holdout"
+      },
+      {
+        "id": "instructions_s_filter_sort_02",
+        "category": "instructions",
+        "family": "instructions/s_filter_sort",
+        "split": "selection"
+      },
+      {
+        "id": "instructions_h_escape_pipeline_02",
+        "category": "instructions",
+        "family": "instructions/h_escape_pipeline",
+        "split": "holdout"
+      },
+      {
+        "id": "instructions_h_access_rules_02",
+        "category": "instructions",
+        "family": "instructions/h_access_rules",
+        "split": "holdout"
+      },
+      {
+        "id": "instructions_s_filter_sort_03",
+        "category": "instructions",
+        "family": "instructions/s_filter_sort",
+        "split": "selection"
+      },
+      {
+        "id": "instructions_h_escape_pipeline_03",
+        "category": "instructions",
+        "family": "instructions/h_escape_pipeline",
+        "split": "holdout"
+      },
+      {
+        "id": "instructions_h_access_rules_03",
+        "category": "instructions",
+        "family": "instructions/h_access_rules",
+        "split": "holdout"
+      },
+      {
+        "id": "instructions_s_filter_sort_04",
+        "category": "instructions",
+        "family": "instructions/s_filter_sort",
+        "split": "selection"
+      },
+      {
+        "id": "instructions_h_escape_pipeline_04",
+        "category": "instructions",
+        "family": "instructions/h_escape_pipeline",
+        "split": "holdout"
+      },
+      {
+        "id": "instructions_h_access_rules_04",
+        "category": "instructions",
+        "family": "instructions/h_access_rules",
+        "split": "holdout"
+      },
+      {
+        "id": "instructions_s_filter_sort_05",
+        "category": "instructions",
+        "family": "instructions/s_filter_sort",
+        "split": "selection"
+      },
+      {
+        "id": "instructions_h_escape_pipeline_05",
+        "category": "instructions",
+        "family": "instructions/h_escape_pipeline",
+        "split": "holdout"
+      },
+      {
+        "id": "instructions_h_access_rules_05",
+        "category": "instructions",
+        "family": "instructions/h_access_rules",
+        "split": "holdout"
+      },
+      {
+        "id": "instructions_s_filter_sort_06",
+        "category": "instructions",
+        "family": "instructions/s_filter_sort",
+        "split": "selection"
+      },
+      {
+        "id": "instructions_h_escape_pipeline_06",
+        "category": "instructions",
+        "family": "instructions/h_escape_pipeline",
+        "split": "holdout"
+      },
+      {
+        "id": "instructions_h_access_rules_06",
+        "category": "instructions",
+        "family": "instructions/h_access_rules",
+        "split": "holdout"
+      },
+      {
+        "id": "instructions_s_filter_sort_07",
+        "category": "instructions",
+        "family": "instructions/s_filter_sort",
+        "split": "selection"
+      },
+      {
+        "id": "instructions_h_escape_pipeline_07",
+        "category": "instructions",
+        "family": "instructions/h_escape_pipeline",
+        "split": "holdout"
+      },
+      {
+        "id": "instructions_h_access_rules_07",
+        "category": "instructions",
+        "family": "instructions/h_access_rules",
+        "split": "holdout"
+      },
+      {
+        "id": "instructions_s_filter_sort_08",
+        "category": "instructions",
+        "family": "instructions/s_filter_sort",
+        "split": "selection"
+      },
+      {
+        "id": "instructions_h_escape_pipeline_08",
+        "category": "instructions",
+        "family": "instructions/h_escape_pipeline",
+        "split": "holdout"
+      },
+      {
+        "id": "instructions_h_access_rules_08",
+        "category": "instructions",
+        "family": "instructions/h_access_rules",
+        "split": "holdout"
+      },
+      {
+        "id": "instructions_s_filter_sort_09",
+        "category": "instructions",
+        "family": "instructions/s_filter_sort",
+        "split": "selection"
+      },
+      {
+        "id": "instructions_h_escape_pipeline_09",
+        "category": "instructions",
+        "family": "instructions/h_escape_pipeline",
+        "split": "holdout"
+      },
+      {
+        "id": "instructions_h_access_rules_09",
+        "category": "instructions",
+        "family": "instructions/h_access_rules",
+        "split": "holdout"
+      },
+      {
+        "id": "structured_s_money_extract_00",
+        "category": "structured",
+        "family": "structured/s_money_extract",
+        "split": "selection"
+      },
+      {
+        "id": "structured_h_versioned_join_00",
+        "category": "structured",
+        "family": "structured/h_versioned_join",
+        "split": "holdout"
+      },
+      {
+        "id": "structured_h_csv_totals_00",
+        "category": "structured",
+        "family": "structured/h_csv_totals",
+        "split": "holdout"
+      },
+      {
+        "id": "structured_s_money_extract_01",
+        "category": "structured",
+        "family": "structured/s_money_extract",
+        "split": "selection"
+      },
+      {
+        "id": "structured_h_versioned_join_01",
+        "category": "structured",
+        "family": "structured/h_versioned_join",
+        "split": "holdout"
+      },
+      {
+        "id": "structured_h_csv_totals_01",
+        "category": "structured",
+        "family": "structured/h_csv_totals",
+        "split": "holdout"
+      },
+      {
+        "id": "structured_s_money_extract_02",
+        "category": "structured",
+        "family": "structured/s_money_extract",
+        "split": "selection"
+      },
+      {
+        "id": "structured_h_versioned_join_02",
+        "category": "structured",
+        "family": "structured/h_versioned_join",
+        "split": "holdout"
+      },
+      {
+        "id": "structured_h_csv_totals_02",
+        "category": "structured",
+        "family": "structured/h_csv_totals",
+        "split": "holdout"
+      },
+      {
+        "id": "structured_s_money_extract_03",
+        "category": "structured",
+        "family": "structured/s_money_extract",
+        "split": "selection"
+      },
+      {
+        "id": "structured_h_versioned_join_03",
+        "category": "structured",
+        "family": "structured/h_versioned_join",
+        "split": "holdout"
+      },
+      {
+        "id": "structured_h_csv_totals_03",
+        "category": "structured",
+        "family": "structured/h_csv_totals",
+        "split": "holdout"
+      },
+      {
+        "id": "structured_s_money_extract_04",
+        "category": "structured",
+        "family": "structured/s_money_extract",
+        "split": "selection"
+      },
+      {
+        "id": "structured_h_versioned_join_04",
+        "category": "structured",
+        "family": "structured/h_versioned_join",
+        "split": "holdout"
+      },
+      {
+        "id": "structured_h_csv_totals_04",
+        "category": "structured",
+        "family": "structured/h_csv_totals",
+        "split": "holdout"
+      },
+      {
+        "id": "structured_s_money_extract_05",
+        "category": "structured",
+        "family": "structured/s_money_extract",
+        "split": "selection"
+      },
+      {
+        "id": "structured_h_versioned_join_05",
+        "category": "structured",
+        "family": "structured/h_versioned_join",
+        "split": "holdout"
+      },
+      {
+        "id": "structured_h_csv_totals_05",
+        "category": "structured",
+        "family": "structured/h_csv_totals",
+        "split": "holdout"
+      },
+      {
+        "id": "structured_s_money_extract_06",
+        "category": "structured",
+        "family": "structured/s_money_extract",
+        "split": "selection"
+      },
+      {
+        "id": "structured_h_versioned_join_06",
+        "category": "structured",
+        "family": "structured/h_versioned_join",
+        "split": "holdout"
+      },
+      {
+        "id": "structured_h_csv_totals_06",
+        "category": "structured",
+        "family": "structured/h_csv_totals",
+        "split": "holdout"
+      },
+      {
+        "id": "structured_s_money_extract_07",
+        "category": "structured",
+        "family": "structured/s_money_extract",
+        "split": "selection"
+      },
+      {
+        "id": "structured_h_versioned_join_07",
+        "category": "structured",
+        "family": "structured/h_versioned_join",
+        "split": "holdout"
+      },
+      {
+        "id": "structured_h_csv_totals_07",
+        "category": "structured",
+        "family": "structured/h_csv_totals",
+        "split": "holdout"
+      },
+      {
+        "id": "structured_s_money_extract_08",
+        "category": "structured",
+        "family": "structured/s_money_extract",
+        "split": "selection"
+      },
+      {
+        "id": "structured_h_versioned_join_08",
+        "category": "structured",
+        "family": "structured/h_versioned_join",
+        "split": "holdout"
+      },
+      {
+        "id": "structured_h_csv_totals_08",
+        "category": "structured",
+        "family": "structured/h_csv_totals",
+        "split": "holdout"
+      },
+      {
+        "id": "structured_s_money_extract_09",
+        "category": "structured",
+        "family": "structured/s_money_extract",
+        "split": "selection"
+      },
+      {
+        "id": "structured_h_versioned_join_09",
+        "category": "structured",
+        "family": "structured/h_versioned_join",
+        "split": "holdout"
+      },
+      {
+        "id": "structured_h_csv_totals_09",
+        "category": "structured",
+        "family": "structured/h_csv_totals",
+        "split": "holdout"
+      },
+      {
+        "id": "tools_s_marker_copy_00",
+        "category": "tools",
+        "family": "tools/s_marker_copy",
+        "split": "selection"
+      },
+      {
+        "id": "tools_h_nested_parallel_00",
+        "category": "tools",
+        "family": "tools/h_nested_parallel",
+        "split": "holdout"
+      },
+      {
+        "id": "tools_h_computed_routing_00",
+        "category": "tools",
+        "family": "tools/h_computed_routing",
+        "split": "holdout"
+      },
+      {
+        "id": "tools_s_marker_copy_01",
+        "category": "tools",
+        "family": "tools/s_marker_copy",
+        "split": "selection"
+      },
+      {
+        "id": "tools_h_nested_parallel_01",
+        "category": "tools",
+        "family": "tools/h_nested_parallel",
+        "split": "holdout"
+      },
+      {
+        "id": "tools_h_computed_routing_01",
+        "category": "tools",
+        "family": "tools/h_computed_routing",
+        "split": "holdout"
+      },
+      {
+        "id": "tools_s_marker_copy_02",
+        "category": "tools",
+        "family": "tools/s_marker_copy",
+        "split": "selection"
+      },
+      {
+        "id": "tools_h_nested_parallel_02",
+        "category": "tools",
+        "family": "tools/h_nested_parallel",
+        "split": "holdout"
+      },
+      {
+        "id": "tools_h_computed_routing_02",
+        "category": "tools",
+        "family": "tools/h_computed_routing",
+        "split": "holdout"
+      },
+      {
+        "id": "tools_s_marker_copy_03",
+        "category": "tools",
+        "family": "tools/s_marker_copy",
+        "split": "selection"
+      },
+      {
+        "id": "tools_h_nested_parallel_03",
+        "category": "tools",
+        "family": "tools/h_nested_parallel",
+        "split": "holdout"
+      },
+      {
+        "id": "tools_h_computed_routing_03",
+        "category": "tools",
+        "family": "tools/h_computed_routing",
+        "split": "holdout"
+      },
+      {
+        "id": "tools_s_marker_copy_04",
+        "category": "tools",
+        "family": "tools/s_marker_copy",
+        "split": "selection"
+      },
+      {
+        "id": "tools_h_nested_parallel_04",
+        "category": "tools",
+        "family": "tools/h_nested_parallel",
+        "split": "holdout"
+      },
+      {
+        "id": "tools_h_computed_routing_04",
+        "category": "tools",
+        "family": "tools/h_computed_routing",
+        "split": "holdout"
+      },
+      {
+        "id": "tools_s_marker_copy_05",
+        "category": "tools",
+        "family": "tools/s_marker_copy",
+        "split": "selection"
+      },
+      {
+        "id": "tools_h_nested_parallel_05",
+        "category": "tools",
+        "family": "tools/h_nested_parallel",
+        "split": "holdout"
+      },
+      {
+        "id": "tools_h_computed_routing_05",
+        "category": "tools",
+        "family": "tools/h_computed_routing",
+        "split": "holdout"
+      },
+      {
+        "id": "tools_s_marker_copy_06",
+        "category": "tools",
+        "family": "tools/s_marker_copy",
+        "split": "selection"
+      },
+      {
+        "id": "tools_h_nested_parallel_06",
+        "category": "tools",
+        "family": "tools/h_nested_parallel",
+        "split": "holdout"
+      },
+      {
+        "id": "tools_h_computed_routing_06",
+        "category": "tools",
+        "family": "tools/h_computed_routing",
+        "split": "holdout"
+      },
+      {
+        "id": "tools_s_marker_copy_07",
+        "category": "tools",
+        "family": "tools/s_marker_copy",
+        "split": "selection"
+      },
+      {
+        "id": "tools_h_nested_parallel_07",
+        "category": "tools",
+        "family": "tools/h_nested_parallel",
+        "split": "holdout"
+      },
+      {
+        "id": "tools_h_computed_routing_07",
+        "category": "tools",
+        "family": "tools/h_computed_routing",
+        "split": "holdout"
+      },
+      {
+        "id": "tools_s_marker_copy_08",
+        "category": "tools",
+        "family": "tools/s_marker_copy",
+        "split": "selection"
+      },
+      {
+        "id": "tools_h_nested_parallel_08",
+        "category": "tools",
+        "family": "tools/h_nested_parallel",
+        "split": "holdout"
+      },
+      {
+        "id": "tools_h_computed_routing_08",
+        "category": "tools",
+        "family": "tools/h_computed_routing",
+        "split": "holdout"
+      },
+      {
+        "id": "tools_s_marker_copy_09",
+        "category": "tools",
+        "family": "tools/s_marker_copy",
+        "split": "selection"
+      },
+      {
+        "id": "tools_h_nested_parallel_09",
+        "category": "tools",
+        "family": "tools/h_nested_parallel",
+        "split": "holdout"
+      },
+      {
+        "id": "tools_h_computed_routing_09",
+        "category": "tools",
+        "family": "tools/h_computed_routing",
+        "split": "holdout"
+      },
+      {
+        "id": "long_context_s_version_lookup_00",
+        "category": "long_context",
+        "family": "long_context/s_version_lookup",
+        "split": "selection",
+        "prepared_prompt_tokens": 32739
+      },
+      {
+        "id": "long_context_h_multihop_join_00",
+        "category": "long_context",
+        "family": "long_context/h_multihop_join",
+        "split": "holdout",
+        "prepared_prompt_tokens": 32733
+      },
+      {
+        "id": "long_context_h_event_reconciliation_00",
+        "category": "long_context",
+        "family": "long_context/h_event_reconciliation",
+        "split": "holdout",
+        "prepared_prompt_tokens": 32726
+      },
+      {
+        "id": "long_context_s_version_lookup_01",
+        "category": "long_context",
+        "family": "long_context/s_version_lookup",
+        "split": "selection",
+        "prepared_prompt_tokens": 131039
+      },
+      {
+        "id": "long_context_h_multihop_join_01",
+        "category": "long_context",
+        "family": "long_context/h_multihop_join",
+        "split": "holdout",
+        "prepared_prompt_tokens": 131033
+      },
+      {
+        "id": "long_context_h_event_reconciliation_01",
+        "category": "long_context",
+        "family": "long_context/h_event_reconciliation",
+        "split": "holdout",
+        "prepared_prompt_tokens": 131026
+      },
+      {
+        "id": "long_context_s_version_lookup_02",
+        "category": "long_context",
+        "family": "long_context/s_version_lookup",
+        "split": "selection",
+        "prepared_prompt_tokens": 262099
+      },
+      {
+        "id": "long_context_h_multihop_join_02",
+        "category": "long_context",
+        "family": "long_context/h_multihop_join",
+        "split": "holdout",
+        "prepared_prompt_tokens": 262093
+      },
+      {
+        "id": "long_context_h_event_reconciliation_02",
+        "category": "long_context",
+        "family": "long_context/h_event_reconciliation",
+        "split": "holdout",
+        "prepared_prompt_tokens": 262106
+      },
+      {
+        "id": "long_context_s_version_lookup_03",
+        "category": "long_context",
+        "family": "long_context/s_version_lookup",
+        "split": "selection",
+        "prepared_prompt_tokens": 32739
+      },
+      {
+        "id": "long_context_h_multihop_join_03",
+        "category": "long_context",
+        "family": "long_context/h_multihop_join",
+        "split": "holdout",
+        "prepared_prompt_tokens": 32733
+      },
+      {
+        "id": "long_context_h_event_reconciliation_03",
+        "category": "long_context",
+        "family": "long_context/h_event_reconciliation",
+        "split": "holdout",
+        "prepared_prompt_tokens": 32726
+      },
+      {
+        "id": "long_context_s_version_lookup_04",
+        "category": "long_context",
+        "family": "long_context/s_version_lookup",
+        "split": "selection",
+        "prepared_prompt_tokens": 131039
+      },
+      {
+        "id": "long_context_h_multihop_join_04",
+        "category": "long_context",
+        "family": "long_context/h_multihop_join",
+        "split": "holdout",
+        "prepared_prompt_tokens": 131033
+      },
+      {
+        "id": "long_context_h_event_reconciliation_04",
+        "category": "long_context",
+        "family": "long_context/h_event_reconciliation",
+        "split": "holdout",
+        "prepared_prompt_tokens": 131026
+      },
+      {
+        "id": "long_context_s_version_lookup_05",
+        "category": "long_context",
+        "family": "long_context/s_version_lookup",
+        "split": "selection",
+        "prepared_prompt_tokens": 262099
+      },
+      {
+        "id": "long_context_h_multihop_join_05",
+        "category": "long_context",
+        "family": "long_context/h_multihop_join",
+        "split": "holdout",
+        "prepared_prompt_tokens": 262093
+      },
+      {
+        "id": "long_context_h_event_reconciliation_05",
+        "category": "long_context",
+        "family": "long_context/h_event_reconciliation",
+        "split": "holdout",
+        "prepared_prompt_tokens": 262106
+      },
+      {
+        "id": "long_context_s_version_lookup_06",
+        "category": "long_context",
+        "family": "long_context/s_version_lookup",
+        "split": "selection",
+        "prepared_prompt_tokens": 32739
+      },
+      {
+        "id": "long_context_h_multihop_join_06",
+        "category": "long_context",
+        "family": "long_context/h_multihop_join",
+        "split": "holdout",
+        "prepared_prompt_tokens": 32733
+      },
+      {
+        "id": "long_context_h_event_reconciliation_06",
+        "category": "long_context",
+        "family": "long_context/h_event_reconciliation",
+        "split": "holdout",
+        "prepared_prompt_tokens": 32726
+      },
+      {
+        "id": "long_context_s_version_lookup_07",
+        "category": "long_context",
+        "family": "long_context/s_version_lookup",
+        "split": "selection",
+        "prepared_prompt_tokens": 131039
+      },
+      {
+        "id": "long_context_h_multihop_join_07",
+        "category": "long_context",
+        "family": "long_context/h_multihop_join",
+        "split": "holdout",
+        "prepared_prompt_tokens": 131033
+      },
+      {
+        "id": "long_context_h_event_reconciliation_07",
+        "category": "long_context",
+        "family": "long_context/h_event_reconciliation",
+        "split": "holdout",
+        "prepared_prompt_tokens": 131026
+      },
+      {
+        "id": "long_context_s_version_lookup_08",
+        "category": "long_context",
+        "family": "long_context/s_version_lookup",
+        "split": "selection",
+        "prepared_prompt_tokens": 262099
+      },
+      {
+        "id": "long_context_h_multihop_join_08",
+        "category": "long_context",
+        "family": "long_context/h_multihop_join",
+        "split": "holdout",
+        "prepared_prompt_tokens": 262093
+      },
+      {
+        "id": "long_context_h_event_reconciliation_08",
+        "category": "long_context",
+        "family": "long_context/h_event_reconciliation",
+        "split": "holdout",
+        "prepared_prompt_tokens": 262106
+      },
+      {
+        "id": "long_context_s_version_lookup_09",
+        "category": "long_context",
+        "family": "long_context/s_version_lookup",
+        "split": "selection",
+        "prepared_prompt_tokens": 32739
+      },
+      {
+        "id": "long_context_h_multihop_join_09",
+        "category": "long_context",
+        "family": "long_context/h_multihop_join",
+        "split": "holdout",
+        "prepared_prompt_tokens": 32733
+      },
+      {
+        "id": "long_context_h_event_reconciliation_09",
+        "category": "long_context",
+        "family": "long_context/h_event_reconciliation",
+        "split": "holdout",
+        "prepared_prompt_tokens": 32726
+      },
+      {
+        "id": "penalties_s_group_sum_00",
+        "category": "penalties",
+        "family": "penalties/s_group_sum",
+        "split": "selection"
+      },
+      {
+        "id": "penalties_h_run_counts_00",
+        "category": "penalties",
+        "family": "penalties/h_run_counts",
+        "split": "holdout"
+      },
+      {
+        "id": "penalties_h_multiset_intersection_00",
+        "category": "penalties",
+        "family": "penalties/h_multiset_intersection",
+        "split": "holdout"
+      },
+      {
+        "id": "penalties_s_group_sum_01",
+        "category": "penalties",
+        "family": "penalties/s_group_sum",
+        "split": "selection"
+      },
+      {
+        "id": "penalties_h_run_counts_01",
+        "category": "penalties",
+        "family": "penalties/h_run_counts",
+        "split": "holdout"
+      },
+      {
+        "id": "penalties_h_multiset_intersection_01",
+        "category": "penalties",
+        "family": "penalties/h_multiset_intersection",
+        "split": "holdout"
+      },
+      {
+        "id": "penalties_s_group_sum_02",
+        "category": "penalties",
+        "family": "penalties/s_group_sum",
+        "split": "selection"
+      },
+      {
+        "id": "penalties_h_run_counts_02",
+        "category": "penalties",
+        "family": "penalties/h_run_counts",
+        "split": "holdout"
+      },
+      {
+        "id": "penalties_h_multiset_intersection_02",
+        "category": "penalties",
+        "family": "penalties/h_multiset_intersection",
+        "split": "holdout"
+      },
+      {
+        "id": "penalties_s_group_sum_03",
+        "category": "penalties",
+        "family": "penalties/s_group_sum",
+        "split": "selection"
+      },
+      {
+        "id": "penalties_h_run_counts_03",
+        "category": "penalties",
+        "family": "penalties/h_run_counts",
+        "split": "holdout"
+      },
+      {
+        "id": "penalties_h_multiset_intersection_03",
+        "category": "penalties",
+        "family": "penalties/h_multiset_intersection",
+        "split": "holdout"
+      },
+      {
+        "id": "penalties_s_group_sum_04",
+        "category": "penalties",
+        "family": "penalties/s_group_sum",
+        "split": "selection"
+      },
+      {
+        "id": "penalties_h_run_counts_04",
+        "category": "penalties",
+        "family": "penalties/h_run_counts",
+        "split": "holdout"
+      },
+      {
+        "id": "penalties_h_multiset_intersection_04",
+        "category": "penalties",
+        "family": "penalties/h_multiset_intersection",
+        "split": "holdout"
+      },
+      {
+        "id": "penalties_s_group_sum_05",
+        "category": "penalties",
+        "family": "penalties/s_group_sum",
+        "split": "selection"
+      },
+      {
+        "id": "penalties_h_run_counts_05",
+        "category": "penalties",
+        "family": "penalties/h_run_counts",
+        "split": "holdout"
+      },
+      {
+        "id": "penalties_h_multiset_intersection_05",
+        "category": "penalties",
+        "family": "penalties/h_multiset_intersection",
+        "split": "holdout"
+      },
+      {
+        "id": "penalties_s_group_sum_06",
+        "category": "penalties",
+        "family": "penalties/s_group_sum",
+        "split": "selection"
+      },
+      {
+        "id": "penalties_h_run_counts_06",
+        "category": "penalties",
+        "family": "penalties/h_run_counts",
+        "split": "holdout"
+      },
+      {
+        "id": "penalties_h_multiset_intersection_06",
+        "category": "penalties",
+        "family": "penalties/h_multiset_intersection",
+        "split": "holdout"
+      },
+      {
+        "id": "penalties_s_group_sum_07",
+        "category": "penalties",
+        "family": "penalties/s_group_sum",
+        "split": "selection"
+      },
+      {
+        "id": "penalties_h_run_counts_07",
+        "category": "penalties",
+        "family": "penalties/h_run_counts",
+        "split": "holdout"
+      },
+      {
+        "id": "penalties_h_multiset_intersection_07",
+        "category": "penalties",
+        "family": "penalties/h_multiset_intersection",
+        "split": "holdout"
+      },
+      {
+        "id": "penalties_s_group_sum_08",
+        "category": "penalties",
+        "family": "penalties/s_group_sum",
+        "split": "selection"
+      },
+      {
+        "id": "penalties_h_run_counts_08",
+        "category": "penalties",
+        "family": "penalties/h_run_counts",
+        "split": "holdout"
+      },
+      {
+        "id": "penalties_h_multiset_intersection_08",
+        "category": "penalties",
+        "family": "penalties/h_multiset_intersection",
+        "split": "holdout"
+      },
+      {
+        "id": "penalties_s_group_sum_09",
+        "category": "penalties",
+        "family": "penalties/s_group_sum",
+        "split": "selection"
+      },
+      {
+        "id": "penalties_h_run_counts_09",
+        "category": "penalties",
+        "family": "penalties/h_run_counts",
+        "split": "holdout"
+      },
+      {
+        "id": "penalties_h_multiset_intersection_09",
+        "category": "penalties",
+        "family": "penalties/h_multiset_intersection",
+        "split": "holdout"
+      },
+      {
+        "id": "workers",
+        "category": "reasoning",
+        "family": "legacy/workers",
+        "split": "regression"
+      },
+      {
+        "id": "conditional_probability",
+        "category": "reasoning",
+        "family": "legacy/conditional_probability",
+        "split": "regression"
+      },
+      {
+        "id": "crt",
+        "category": "reasoning",
+        "family": "legacy/crt",
+        "split": "regression"
+      },
+      {
+        "id": "nonadjacent_count",
+        "category": "reasoning",
+        "family": "legacy/nonadjacent_count",
+        "split": "regression"
+      },
+      {
+        "id": "subset_count",
+        "category": "reasoning",
+        "family": "legacy/subset_count",
+        "split": "regression"
+      },
+      {
+        "id": "replacement_average",
+        "category": "reasoning",
+        "family": "legacy/replacement_average",
+        "split": "regression"
+      },
+      {
+        "id": "modular_power",
+        "category": "reasoning",
+        "family": "legacy/modular_power",
+        "split": "regression"
+      },
+      {
+        "id": "probability_without_replacement",
+        "category": "reasoning",
+        "family": "legacy/probability_without_replacement",
+        "split": "regression"
+      },
+      {
+        "id": "scheduling",
+        "category": "reasoning",
+        "family": "legacy/scheduling",
+        "split": "regression"
+      },
+      {
+        "id": "ordering_constraints",
+        "category": "reasoning",
+        "family": "legacy/ordering_constraints",
+        "split": "regression"
+      },
+      {
+        "id": "weighted_path",
+        "category": "reasoning",
+        "family": "legacy/weighted_path",
+        "split": "regression"
+      },
+      {
+        "id": "code_merge_intervals",
+        "category": "coding",
+        "family": "legacy/code_merge_intervals",
+        "split": "regression"
+      },
+      {
+        "id": "code_brackets",
+        "category": "coding",
+        "family": "legacy/code_brackets",
+        "split": "regression"
+      },
+      {
+        "id": "code_shortest_path",
+        "category": "coding",
+        "family": "legacy/code_shortest_path",
+        "split": "regression"
+      },
+      {
+        "id": "code_top_words",
+        "category": "coding",
+        "family": "legacy/code_top_words",
+        "split": "regression"
+      },
+      {
+        "id": "code_last_occurrence",
+        "category": "coding",
+        "family": "legacy/code_last_occurrence",
+        "split": "regression"
+      },
+      {
+        "id": "code_run_length",
+        "category": "coding",
+        "family": "legacy/code_run_length",
+        "split": "regression"
+      },
+      {
+        "id": "code_csv_totals",
+        "category": "coding",
+        "family": "legacy/code_csv_totals",
+        "split": "regression"
+      },
+      {
+        "id": "code_sliding_max",
+        "category": "coding",
+        "family": "legacy/code_sliding_max",
+        "split": "regression"
+      },
+      {
+        "id": "zh_three_lines",
+        "category": "instructions",
+        "family": "legacy/zh_three_lines",
+        "split": "regression"
+      },
+      {
+        "id": "zh_sort",
+        "category": "instructions",
+        "family": "legacy/zh_sort",
+        "split": "regression"
+      },
+      {
+        "id": "zh_boundary",
+        "category": "instructions",
+        "family": "legacy/zh_boundary",
+        "split": "regression"
+      },
+      {
+        "id": "zh_redaction",
+        "category": "instructions",
+        "family": "legacy/zh_redaction",
+        "split": "regression"
+      },
+      {
+        "id": "zh_reverse",
+        "category": "instructions",
+        "family": "legacy/zh_reverse",
+        "split": "regression"
+      },
+      {
+        "id": "zh_final_instruction",
+        "category": "instructions",
+        "family": "legacy/zh_final_instruction",
+        "split": "regression"
+      },
+      {
+        "id": "zh_extract_order",
+        "category": "instructions",
+        "family": "legacy/zh_extract_order",
+        "split": "regression"
+      },
+      {
+        "id": "zh_no_translation",
+        "category": "instructions",
+        "family": "legacy/zh_no_translation",
+        "split": "regression"
+      },
+      {
+        "id": "extract_amounts",
+        "category": "structured",
+        "family": "legacy/extract_amounts",
+        "split": "regression"
+      },
+      {
+        "id": "extract_missing",
+        "category": "structured",
+        "family": "legacy/extract_missing",
+        "split": "regression"
+      },
+      {
+        "id": "extract_negation",
+        "category": "structured",
+        "family": "legacy/extract_negation",
+        "split": "regression"
+      },
+      {
+        "id": "extract_units",
+        "category": "structured",
+        "family": "legacy/extract_units",
+        "split": "regression"
+      },
+      {
+        "id": "extract_unicode",
+        "category": "structured",
+        "family": "legacy/extract_unicode",
+        "split": "regression"
+      },
+      {
+        "id": "extract_override",
+        "category": "structured",
+        "family": "legacy/extract_override",
+        "split": "regression"
+      },
+      {
+        "id": "extract_untrusted_text",
+        "category": "structured",
+        "family": "legacy/extract_untrusted_text",
+        "split": "regression"
+      },
+      {
+        "id": "extract_nested",
+        "category": "structured",
+        "family": "legacy/extract_nested",
+        "split": "regression"
+      },
+      {
+        "id": "tool_record_unicode",
+        "category": "tools",
+        "family": "legacy/tool_record_unicode",
+        "split": "regression"
+      },
+      {
+        "id": "tool_two_tools",
+        "category": "tools",
+        "family": "legacy/tool_two_tools",
+        "split": "regression"
+      },
+      {
+        "id": "tool_zero_negative",
+        "category": "tools",
+        "family": "legacy/tool_zero_negative",
+        "split": "regression"
+      },
+      {
+        "id": "tool_long_arguments",
+        "category": "tools",
+        "family": "legacy/tool_long_arguments",
+        "split": "regression"
+      },
+      {
+        "id": "tool_escaped_lines",
+        "category": "tools",
+        "family": "legacy/tool_escaped_lines",
+        "split": "regression"
+      },
+      {
+        "id": "tool_repeated_name",
+        "category": "tools",
+        "family": "legacy/tool_repeated_name",
+        "split": "regression"
+      },
+      {
+        "id": "tool_multiple_three",
+        "category": "tools",
+        "family": "legacy/tool_multiple_three",
+        "split": "regression"
+      },
+      {
+        "id": "tool_literal_markers",
+        "category": "tools",
+        "family": "legacy/tool_literal_markers",
+        "split": "regression"
+      },
+      {
+        "id": "context_800",
+        "category": "long_context",
+        "family": "legacy/context_800",
+        "split": "regression"
+      },
+      {
+        "id": "context_1600",
+        "category": "long_context",
+        "family": "legacy/context_1600",
+        "split": "regression"
+      },
+      {
+        "id": "context_3200",
+        "category": "long_context",
+        "family": "legacy/context_3200",
+        "split": "regression"
+      },
+      {
+        "id": "context_6400",
+        "category": "long_context",
+        "family": "legacy/context_6400",
+        "split": "regression"
+      },
+      {
+        "id": "penalty_0",
+        "category": "penalties",
+        "family": "legacy/penalty_0",
+        "split": "regression"
+      },
+      {
+        "id": "penalty_1",
+        "category": "penalties",
+        "family": "legacy/penalty_1",
+        "split": "regression"
+      },
+      {
+        "id": "penalty_2",
+        "category": "penalties",
+        "family": "legacy/penalty_2",
+        "split": "regression"
+      },
+      {
+        "id": "penalty_3",
+        "category": "penalties",
+        "family": "legacy/penalty_3",
+        "split": "regression"
+      }
+    ]
+  },
+  "selection": {
+    "selected": {
+      "reasoning": {
+        "temperature": 1,
+        "top_p": 1,
+        "reasoning_effort": "high",
+        "max_tokens": 12288
+      },
+      "coding": {
+        "temperature": 1,
+        "top_p": 1,
+        "reasoning_effort": "low",
+        "max_tokens": 12288
+      },
+      "instructions": {
+        "temperature": 1,
+        "top_p": 1,
+        "reasoning_effort": "low",
+        "max_tokens": 2048
+      },
+      "structured": {
+        "temperature": 1,
+        "top_p": 1,
+        "reasoning_effort": "low",
+        "max_tokens": 2048
+      },
+      "tools": {
+        "temperature": 1,
+        "top_p": 1,
+        "reasoning_effort": "none",
+        "max_tokens": 4096
+      },
+      "long_context": {
+        "temperature": 1,
+        "top_p": 1,
+        "reasoning_effort": "low",
+        "max_tokens": 2048
+      },
+      "penalties": {
+        "temperature": 0.3,
+        "top_p": 1,
+        "reasoning_effort": "low",
+        "max_tokens": 2048
+      }
+    },
+    "screening": {
+      "reasoning": [
+        {
+          "parameters": {
+            "temperature": 1,
+            "top_p": 1,
+            "reasoning_effort": "high",
+            "max_tokens": 12288
+          },
+          "profile_id": "e7823ccff83aae28",
+          "requests": 30,
+          "passed": 30
+        },
+        {
+          "parameters": {
+            "temperature": 1,
+            "top_p": 1,
+            "reasoning_effort": "low",
+            "max_tokens": 12288
+          },
+          "profile_id": "744e9cf1046c2dff",
+          "requests": 30,
+          "passed": 30
+        },
+        {
+          "parameters": {
+            "temperature": 1,
+            "top_p": 1,
+            "reasoning_effort": "medium",
+            "max_tokens": 12288
+          },
+          "profile_id": "f4a025167a302ad4",
+          "requests": 30,
+          "passed": 30
+        },
+        {
+          "parameters": {
+            "temperature": 0.6,
+            "top_p": 1,
+            "reasoning_effort": "high",
+            "max_tokens": 12288
+          },
+          "profile_id": "eacfcc4631e4792d",
+          "requests": 30,
+          "passed": 30
+        },
+        {
+          "parameters": {
+            "temperature": 1,
+            "top_p": 1,
+            "reasoning_effort": "low",
+            "max_tokens": 24576
+          },
+          "profile_id": "cd0ef8bfdb4e4d4e",
+          "requests": 30,
+          "passed": 30
+        },
+        {
+          "parameters": {
+            "temperature": 1,
+            "top_p": 1,
+            "reasoning_effort": "high",
+            "max_tokens": 24576
+          },
+          "profile_id": "6d4618dac8a2376c",
+          "requests": 30,
+          "passed": 30
+        },
+        {
+          "parameters": {
+            "temperature": 1,
+            "top_p": 1,
+            "reasoning_effort": "max",
+            "max_tokens": 12288
+          },
+          "profile_id": "e7f1233e163c6b38",
+          "requests": 30,
+          "passed": 29
+        }
+      ],
+      "coding": [
+        {
+          "parameters": {
+            "temperature": 1,
+            "top_p": 1,
+            "reasoning_effort": "low",
+            "max_tokens": 12288
+          },
+          "profile_id": "744e9cf1046c2dff",
+          "requests": 30,
+          "passed": 30
+        },
+        {
+          "parameters": {
+            "temperature": 0.6,
+            "top_p": 1,
+            "reasoning_effort": "low",
+            "max_tokens": 12288
+          },
+          "profile_id": "a17d3e22d707e94f",
+          "requests": 30,
+          "passed": 30
+        },
+        {
+          "parameters": {
+            "temperature": 1,
+            "top_p": 1,
+            "reasoning_effort": "medium",
+            "max_tokens": 12288
+          },
+          "profile_id": "f4a025167a302ad4",
+          "requests": 30,
+          "passed": 30
+        },
+        {
+          "parameters": {
+            "temperature": 1,
+            "top_p": 1,
+            "reasoning_effort": "high",
+            "max_tokens": 12288
+          },
+          "profile_id": "e7823ccff83aae28",
+          "requests": 30,
+          "passed": 30
+        },
+        {
+          "parameters": {
+            "temperature": 1,
+            "top_p": 1,
+            "reasoning_effort": "max",
+            "max_tokens": 12288
+          },
+          "profile_id": "e7f1233e163c6b38",
+          "requests": 30,
+          "passed": 30
+        },
+        {
+          "parameters": {
+            "temperature": 1,
+            "top_p": 1,
+            "reasoning_effort": "low",
+            "max_tokens": 24576
+          },
+          "profile_id": "cd0ef8bfdb4e4d4e",
+          "requests": 30,
+          "passed": 30
+        },
+        {
+          "parameters": {
+            "temperature": 1,
+            "top_p": 1,
+            "reasoning_effort": "medium",
+            "max_tokens": 24576
+          },
+          "profile_id": "cf11bb85fcc008ac",
+          "requests": 30,
+          "passed": 30
+        }
+      ],
+      "instructions": [
+        {
+          "parameters": {
+            "temperature": 1,
+            "top_p": 1,
+            "reasoning_effort": "low",
+            "max_tokens": 2048
+          },
+          "profile_id": "613c7bd7bc083365",
+          "requests": 30,
+          "passed": 30
+        },
+        {
+          "parameters": {
+            "temperature": 0.6,
+            "top_p": 1,
+            "reasoning_effort": "low",
+            "max_tokens": 2048
+          },
+          "profile_id": "3f0883740c513aa9",
+          "requests": 30,
+          "passed": 30
+        },
+        {
+          "parameters": {
+            "temperature": 0.3,
+            "top_p": 1,
+            "reasoning_effort": "low",
+            "max_tokens": 2048
+          },
+          "profile_id": "7db12dd6ef6005a7",
+          "requests": 30,
+          "passed": 30
+        },
+        {
+          "parameters": {
+            "temperature": 1,
+            "top_p": 1,
+            "reasoning_effort": "medium",
+            "max_tokens": 2048
+          },
+          "profile_id": "f268778a791287e1",
+          "requests": 30,
+          "passed": 30
+        },
+        {
+          "parameters": {
+            "temperature": 1,
+            "top_p": 1,
+            "reasoning_effort": "none",
+            "max_tokens": 2048
+          },
+          "profile_id": "b5f38ca5f3c80366",
+          "requests": 30,
+          "passed": 19
+        }
+      ],
+      "structured": [
+        {
+          "parameters": {
+            "temperature": 1,
+            "top_p": 1,
+            "reasoning_effort": "low",
+            "max_tokens": 2048
+          },
+          "profile_id": "613c7bd7bc083365",
+          "requests": 30,
+          "passed": 30
+        },
+        {
+          "parameters": {
+            "temperature": 0.6,
+            "top_p": 1,
+            "reasoning_effort": "low",
+            "max_tokens": 2048
+          },
+          "profile_id": "3f0883740c513aa9",
+          "requests": 30,
+          "passed": 30
+        },
+        {
+          "parameters": {
+            "temperature": 0.3,
+            "top_p": 1,
+            "reasoning_effort": "low",
+            "max_tokens": 2048
+          },
+          "profile_id": "7db12dd6ef6005a7",
+          "requests": 30,
+          "passed": 30
+        },
+        {
+          "parameters": {
+            "temperature": 1,
+            "top_p": 1,
+            "reasoning_effort": "medium",
+            "max_tokens": 2048
+          },
+          "profile_id": "f268778a791287e1",
+          "requests": 30,
+          "passed": 30
+        },
+        {
+          "parameters": {
+            "temperature": 1,
+            "top_p": 1,
+            "reasoning_effort": "none",
+            "max_tokens": 2048
+          },
+          "profile_id": "b5f38ca5f3c80366",
+          "requests": 30,
+          "passed": 17
+        }
+      ],
+      "tools": [
+        {
+          "parameters": {
+            "temperature": 1,
+            "top_p": 1,
+            "reasoning_effort": "none",
+            "max_tokens": 4096
+          },
+          "profile_id": "907023aeb4646daa",
+          "requests": 30,
+          "passed": 8
+        },
+        {
+          "parameters": {
+            "temperature": 0.6,
+            "top_p": 1,
+            "reasoning_effort": "none",
+            "max_tokens": 4096
+          },
+          "profile_id": "809fc687743382bc",
+          "requests": 30,
+          "passed": 6
+        },
+        {
+          "parameters": {
+            "temperature": 0.3,
+            "top_p": 1,
+            "reasoning_effort": "none",
+            "max_tokens": 4096
+          },
+          "profile_id": "6ceb089188617be4",
+          "requests": 30,
+          "passed": 6
+        },
+        {
+          "parameters": {
+            "temperature": 1,
+            "top_p": 1,
+            "reasoning_effort": "low",
+            "max_tokens": 4096
+          },
+          "profile_id": "bcc297c251071c75",
+          "requests": 30,
+          "passed": 6
+        },
+        {
+          "parameters": {
+            "temperature": 1,
+            "top_p": 1,
+            "reasoning_effort": "medium",
+            "max_tokens": 4096
+          },
+          "profile_id": "86347c811317adfd",
+          "requests": 30,
+          "passed": 6
+        }
+      ],
+      "long_context": [
+        {
+          "parameters": {
+            "temperature": 1,
+            "top_p": 1,
+            "reasoning_effort": "low",
+            "max_tokens": 2048
+          },
+          "profile_id": "613c7bd7bc083365",
+          "requests": 30,
+          "passed": 30
+        },
+        {
+          "parameters": {
+            "temperature": 0.6,
+            "top_p": 1,
+            "reasoning_effort": "low",
+            "max_tokens": 2048
+          },
+          "profile_id": "3f0883740c513aa9",
+          "requests": 30,
+          "passed": 30
+        },
+        {
+          "parameters": {
+            "temperature": 0.3,
+            "top_p": 1,
+            "reasoning_effort": "low",
+            "max_tokens": 2048
+          },
+          "profile_id": "7db12dd6ef6005a7",
+          "requests": 30,
+          "passed": 30
+        },
+        {
+          "parameters": {
+            "temperature": 1,
+            "top_p": 1,
+            "reasoning_effort": "medium",
+            "max_tokens": 2048
+          },
+          "profile_id": "f268778a791287e1",
+          "requests": 30,
+          "passed": 30
+        },
+        {
+          "parameters": {
+            "temperature": 1,
+            "top_p": 1,
+            "reasoning_effort": "none",
+            "max_tokens": 2048
+          },
+          "profile_id": "b5f38ca5f3c80366",
+          "requests": 30,
+          "passed": 25
+        }
+      ],
+      "penalties": [
+        {
+          "parameters": {
+            "temperature": 0.3,
+            "top_p": 1,
+            "reasoning_effort": "low",
+            "max_tokens": 2048
+          },
+          "profile_id": "7db12dd6ef6005a7",
+          "requests": 30,
+          "passed": 18
+        },
+        {
+          "parameters": {
+            "temperature": 0.6,
+            "top_p": 1,
+            "reasoning_effort": "low",
+            "max_tokens": 2048
+          },
+          "profile_id": "3f0883740c513aa9",
+          "requests": 30,
+          "passed": 17
+        },
+        {
+          "parameters": {
+            "temperature": 1,
+            "top_p": 1,
+            "reasoning_effort": "low",
+            "max_tokens": 2048
+          },
+          "profile_id": "613c7bd7bc083365",
+          "requests": 30,
+          "passed": 16
+        },
+        {
+          "parameters": {
+            "temperature": 1,
+            "top_p": 1,
+            "reasoning_effort": "medium",
+            "max_tokens": 2048
+          },
+          "profile_id": "f268778a791287e1",
+          "requests": 30,
+          "passed": 14
+        },
+        {
+          "parameters": {
+            "temperature": 1,
+            "top_p": 1,
+            "reasoning_effort": "none",
+            "max_tokens": 2048
+          },
+          "profile_id": "b5f38ca5f3c80366",
+          "requests": 30,
+          "passed": 2
+        }
+      ]
+    },
+    "locked_before_holdout": true,
+    "selection_sha256": "bae07e305a1ef634f87b9a36b82a5bc21e3b9505b27e19316b31e3005c3d3ee9"
+  },
+  "phase_summaries": {
+    "code_low_control": {
+      "baseline": {
+        "coding": {
+          "requests": 40,
+          "passed": 40,
+          "truncated": 0,
+          "api_errors": 0,
+          "median_total_s": 2.607574725523591,
+          "median_completion_tokens": 484.0,
+          "median_reasoning_tokens": 353.5,
+          "median_first_answer_s": 2.224234187975526
+        }
+      },
+      "candidate": {
+        "coding": {
+          "requests": 40,
+          "passed": 40,
+          "truncated": 0,
+          "api_errors": 0,
+          "median_total_s": 2.2636286979541183,
+          "median_completion_tokens": 411.0,
+          "median_reasoning_tokens": 271.0,
+          "median_first_answer_s": 1.900342713110149
+        }
+      }
+    },
+    "holdout": {
+      "baseline": {
+        "reasoning": {
+          "requests": 100,
+          "passed": 100,
+          "truncated": 0,
+          "api_errors": 0,
+          "median_total_s": 6.596462030429393,
+          "median_completion_tokens": 1421.5,
+          "median_reasoning_tokens": 1411.5,
+          "median_first_answer_s": 6.569605281110853
+        },
+        "coding": {
+          "requests": 100,
+          "passed": 98,
+          "truncated": 2,
+          "api_errors": 0,
+          "median_total_s": 10.742148717865348,
+          "median_completion_tokens": 2580.5,
+          "median_reasoning_tokens": 2253.5,
+          "median_first_answer_s": 9.888623940292746
+        },
+        "instructions": {
+          "requests": 100,
+          "passed": 46,
+          "truncated": 0,
+          "api_errors": 0,
+          "median_total_s": 0.3691106317564845,
+          "median_completion_tokens": 23.0,
+          "median_reasoning_tokens": 0.0,
+          "median_first_answer_s": 0.28075420623645186
+        },
+        "structured": {
+          "requests": 100,
+          "passed": 55,
+          "truncated": 5,
+          "api_errors": 0,
+          "median_total_s": 0.6628351709805429,
+          "median_completion_tokens": 131.0,
+          "median_reasoning_tokens": 0.0,
+          "median_first_answer_s": 0.28082130663096905
+        },
+        "tools": {
+          "requests": 100,
+          "passed": 0,
+          "truncated": 9,
+          "api_errors": 0,
+          "median_total_s": 0.9671475570648909,
+          "median_completion_tokens": 188.0,
+          "median_reasoning_tokens": 0.0,
+          "median_first_answer_s": 0.5200508353300393
+        },
+        "long_context": {
+          "requests": 100,
+          "passed": 44,
+          "truncated": 0,
+          "api_errors": 0,
+          "median_total_s": 1.4958011503331363,
+          "median_completion_tokens": 14.0,
+          "median_reasoning_tokens": 0.0,
+          "median_first_answer_s": 1.443359128665179
+        },
+        "penalties": {
+          "requests": 100,
+          "passed": 45,
+          "truncated": 0,
+          "api_errors": 0,
+          "median_total_s": 0.5654527992010117,
+          "median_completion_tokens": 111.0,
+          "median_reasoning_tokens": 0.0,
+          "median_first_answer_s": 0.2732585468329489
+        }
+      },
+      "candidate": {
+        "reasoning": {
+          "requests": 100,
+          "passed": 100,
+          "truncated": 0,
+          "api_errors": 0,
+          "median_total_s": 6.488777149934322,
+          "median_completion_tokens": 1568.5,
+          "median_reasoning_tokens": 1558.5,
+          "median_first_answer_s": 6.450729307252914
+        },
+        "coding": {
+          "requests": 100,
+          "passed": 96,
+          "truncated": 3,
+          "api_errors": 0,
+          "median_total_s": 10.9367870464921,
+          "median_completion_tokens": 2422.5,
+          "median_reasoning_tokens": 2099.0,
+          "median_first_answer_s": 9.996802070178092
+        },
+        "instructions": {
+          "requests": 100,
+          "passed": 93,
+          "truncated": 4,
+          "api_errors": 0,
+          "median_total_s": 1.6697115683928132,
+          "median_completion_tokens": 294.5,
+          "median_reasoning_tokens": 283.5,
+          "median_first_answer_s": 1.6150401667691767
+        },
+        "structured": {
+          "requests": 100,
+          "passed": 69,
+          "truncated": 7,
+          "api_errors": 0,
+          "median_total_s": 3.0840075304731727,
+          "median_completion_tokens": 656.0,
+          "median_reasoning_tokens": 547.0,
+          "median_first_answer_s": 2.7441343031823635
+        },
+        "tools": {
+          "requests": 100,
+          "passed": 3,
+          "truncated": 7,
+          "api_errors": 0,
+          "median_total_s": 0.9439397864043713,
+          "median_completion_tokens": 188.0,
+          "median_reasoning_tokens": 0.0,
+          "median_first_answer_s": 0.5277849319390953
+        },
+        "long_context": {
+          "requests": 100,
+          "passed": 98,
+          "truncated": 1,
+          "api_errors": 0,
+          "median_total_s": 2.289887764956802,
+          "median_completion_tokens": 223.5,
+          "median_reasoning_tokens": 211.0,
+          "median_first_answer_s": 2.236894804984331
+        },
+        "penalties": {
+          "requests": 100,
+          "passed": 52,
+          "truncated": 44,
+          "api_errors": 0,
+          "median_total_s": 4.007127209100872,
+          "median_completion_tokens": 952.0,
+          "median_reasoning_tokens": 849.0,
+          "median_first_answer_s": 2.6874791155569255
+        }
+      }
+    },
+    "regression": {
+      "baseline": {
+        "reasoning": {
+          "requests": 22,
+          "passed": 22,
+          "truncated": 0,
+          "api_errors": 0,
+          "median_total_s": 1.4168483722023666,
+          "median_completion_tokens": 266.5,
+          "median_reasoning_tokens": 260.5,
+          "median_first_answer_s": 1.3998808227479458
+        },
+        "coding": {
+          "requests": 16,
+          "passed": 15,
+          "truncated": 1,
+          "api_errors": 0,
+          "median_total_s": 2.3961782371625304,
+          "median_completion_tokens": 521.0,
+          "median_reasoning_tokens": 339.0,
+          "median_first_answer_s": 1.6408669361844659
+        },
+        "instructions": {
+          "requests": 16,
+          "passed": 16,
+          "truncated": 0,
+          "api_errors": 0,
+          "median_total_s": 0.2969812108203769,
+          "median_completion_tokens": 7.5,
+          "median_reasoning_tokens": 0.0,
+          "median_first_answer_s": 0.2644161959178746
+        },
+        "structured": {
+          "requests": 16,
+          "passed": 16,
+          "truncated": 0,
+          "api_errors": 0,
+          "median_total_s": 0.3521339320577681,
+          "median_completion_tokens": 19.5,
+          "median_reasoning_tokens": 0.0,
+          "median_first_answer_s": 0.26743268594145775
+        },
+        "tools": {
+          "requests": 16,
+          "passed": 14,
+          "truncated": 0,
+          "api_errors": 0,
+          "median_total_s": 0.6651972746476531,
+          "median_completion_tokens": 129.5,
+          "median_reasoning_tokens": 0.0,
+          "median_first_answer_s": 0.5040754624642432
+        },
+        "long_context": {
+          "requests": 8,
+          "passed": 7,
+          "truncated": 0,
+          "api_errors": 0,
+          "median_total_s": 0.789956749882549,
+          "median_completion_tokens": 37.0,
+          "median_reasoning_tokens": 0.0,
+          "median_first_answer_s": 0.7028651065193117
+        },
+        "penalties": {
+          "requests": 8,
+          "passed": 8,
+          "truncated": 0,
+          "api_errors": 0,
+          "median_total_s": 0.36393584869802,
+          "median_completion_tokens": 18.0,
+          "median_reasoning_tokens": 0.0,
+          "median_first_answer_s": 0.2627905351109803
+        }
+      },
+      "candidate": {
+        "reasoning": {
+          "requests": 22,
+          "passed": 22,
+          "truncated": 0,
+          "api_errors": 0,
+          "median_total_s": 1.140389097854495,
+          "median_completion_tokens": 258.0,
+          "median_reasoning_tokens": 246.0,
+          "median_first_answer_s": 1.1180682377889752
+        },
+        "coding": {
+          "requests": 16,
+          "passed": 15,
+          "truncated": 1,
+          "api_errors": 0,
+          "median_total_s": 1.8419569339603186,
+          "median_completion_tokens": 382.5,
+          "median_reasoning_tokens": 270.0,
+          "median_first_answer_s": 1.5199095625430346
+        },
+        "instructions": {
+          "requests": 16,
+          "passed": 16,
+          "truncated": 0,
+          "api_errors": 0,
+          "median_total_s": 0.6700893430970609,
+          "median_completion_tokens": 78.5,
+          "median_reasoning_tokens": 70.0,
+          "median_first_answer_s": 0.648296779487282
+        },
+        "structured": {
+          "requests": 16,
+          "passed": 16,
+          "truncated": 0,
+          "api_errors": 0,
+          "median_total_s": 0.8267230512574315,
+          "median_completion_tokens": 148.5,
+          "median_reasoning_tokens": 128.5,
+          "median_first_answer_s": 0.8110484406352043
+        },
+        "tools": {
+          "requests": 16,
+          "passed": 14,
+          "truncated": 0,
+          "api_errors": 0,
+          "median_total_s": 0.6132473568432033,
+          "median_completion_tokens": 129.5,
+          "median_reasoning_tokens": 0.0,
+          "median_first_answer_s": 0.5075026215054095
+        },
+        "long_context": {
+          "requests": 8,
+          "passed": 8,
+          "truncated": 0,
+          "api_errors": 0,
+          "median_total_s": 1.3445456814952195,
+          "median_completion_tokens": 190.5,
+          "median_reasoning_tokens": 153.5,
+          "median_first_answer_s": 1.2617083978839219
+        },
+        "penalties": {
+          "requests": 8,
+          "passed": 8,
+          "truncated": 0,
+          "api_errors": 0,
+          "median_total_s": 0.7067312388680875,
+          "median_completion_tokens": 107.0,
+          "median_reasoning_tokens": 89.0,
+          "median_first_answer_s": 0.6551480479538441
+        }
+      }
+    },
+    "selection": {
+      "screen": {
+        "reasoning": {
+          "requests": 210,
+          "passed": 209,
+          "truncated": 1,
+          "api_errors": 0,
+          "median_total_s": 19.56989839533344,
+          "median_completion_tokens": 4496.0,
+          "median_reasoning_tokens": 4490.0,
+          "median_first_answer_s": 19.538334298878908
+        },
+        "coding": {
+          "requests": 210,
+          "passed": 210,
+          "truncated": 0,
+          "api_errors": 0,
+          "median_total_s": 5.065134984906763,
+          "median_completion_tokens": 958.5,
+          "median_reasoning_tokens": 846.0,
+          "median_first_answer_s": 4.732780994381756
+        },
+        "instructions": {
+          "requests": 150,
+          "passed": 139,
+          "truncated": 0,
+          "api_errors": 0,
+          "median_total_s": 1.120949377771467,
+          "median_completion_tokens": 175.0,
+          "median_reasoning_tokens": 165.5,
+          "median_first_answer_s": 1.0943755600601435
+        },
+        "structured": {
+          "requests": 150,
+          "passed": 137,
+          "truncated": 0,
+          "api_errors": 0,
+          "median_total_s": 1.5558526515960693,
+          "median_completion_tokens": 331.5,
+          "median_reasoning_tokens": 232.5,
+          "median_first_answer_s": 1.262166879605502
+        },
+        "tools": {
+          "requests": 150,
+          "passed": 32,
+          "truncated": 0,
+          "api_errors": 0,
+          "median_total_s": 0.5998481893911958,
+          "median_completion_tokens": 83.0,
+          "median_reasoning_tokens": 0.0,
+          "median_first_answer_s": 0.5810556914657354
+        },
+        "long_context": {
+          "requests": 150,
+          "passed": 145,
+          "truncated": 0,
+          "api_errors": 0,
+          "median_total_s": 1.3604558752849698,
+          "median_completion_tokens": 211.5,
+          "median_reasoning_tokens": 186.5,
+          "median_first_answer_s": 1.3033465128391981
+        },
+        "penalties": {
+          "requests": 150,
+          "passed": 67,
+          "truncated": 51,
+          "api_errors": 0,
+          "median_total_s": 2.891626348719001,
+          "median_completion_tokens": 731.5,
+          "median_reasoning_tokens": 717.5,
+          "median_first_answer_s": 2.1258306419476867
+        }
+      }
+    },
+    "smoke": {
+      "screen": {
+        "reasoning": {
+          "requests": 5,
+          "passed": 4,
+          "truncated": 0,
+          "api_errors": 0,
+          "median_total_s": 0.7172370692715049,
+          "median_completion_tokens": 123,
+          "median_reasoning_tokens": 115,
+          "median_first_answer_s": 0.6854906063526869
+        }
+      }
+    },
+    "tools_nonstream": {
+      "baseline": {
+        "tools": {
+          "requests": 60,
+          "passed": 2,
+          "truncated": 8,
+          "api_errors": 0,
+          "median_total_s": 0.9496652027592063,
+          "median_completion_tokens": 188.0,
+          "median_reasoning_tokens": 0.0,
+          "median_first_answer_s": null
+        }
+      },
+      "candidate": {
+        "tools": {
+          "requests": 60,
+          "passed": 1,
+          "truncated": 6,
+          "api_errors": 0,
+          "median_total_s": 0.9429499129764736,
+          "median_completion_tokens": 188.0,
+          "median_reasoning_tokens": 0.0,
+          "median_first_answer_s": null
+        }
+      }
+    }
+  },
+  "quality_gate": {
+    "macro_delta": 0.1757142857142857,
+    "per_category_delta": {
+      "reasoning": 0.0,
+      "coding": -0.02,
+      "instructions": 0.47,
+      "structured": 0.14,
+      "tools": 0.03,
+      "long_context": 0.54,
+      "penalties": 0.07
+    },
+    "ci95": [
+      0.05,
+      0.3057142857142857
+    ],
+    "bootstrap_repetitions": 10000,
+    "independent_resampling_unit": "problem family within category",
+    "holdout_families": 14,
+    "passed": true
+  },
+  "speed_gate": {
+    "batches": 140,
+    "comparisons": [
+      {
+        "category": "reasoning",
+        "concurrency": 1,
+        "baseline": 303.80792861412476,
+        "candidate": 314.60787316003103,
+        "ratio": 1.0355485934655233
+      },
+      {
+        "category": "reasoning",
+        "concurrency": 4,
+        "baseline": 722.102439970425,
+        "candidate": 714.9258389527633,
+        "ratio": 0.9900615195013666
+      },
+      {
+        "category": "coding",
+        "concurrency": 1,
+        "baseline": 264.0581585456341,
+        "candidate": 286.09494807856214,
+        "ratio": 1.0834543028486645
+      },
+      {
+        "category": "coding",
+        "concurrency": 4,
+        "baseline": 627.6709595592886,
+        "candidate": 582.1280460335499,
+        "ratio": 0.9274414200113448
+      },
+      {
+        "category": "instructions",
+        "concurrency": 1,
+        "baseline": 73.5069716887497,
+        "candidate": 282.03772878993567,
+        "ratio": 3.836884071135007
+      },
+      {
+        "category": "instructions",
+        "concurrency": 4,
+        "baseline": 142.64140424064777,
+        "candidate": 605.420890665783,
+        "ratio": 4.24435593500179
+      },
+      {
+        "category": "structured",
+        "concurrency": 1,
+        "baseline": 277.3202310580847,
+        "candidate": 340.3827210867235,
+        "ratio": 1.22739952937451
+      },
+      {
+        "category": "structured",
+        "concurrency": 4,
+        "baseline": 733.6952835210194,
+        "candidate": 762.4230466032926,
+        "ratio": 1.0391548967636919
+      },
+      {
+        "category": "tools",
+        "concurrency": 1,
+        "baseline": 243.80915950974943,
+        "candidate": 241.12417170362502,
+        "ratio": 0.9889873382463424
+      },
+      {
+        "category": "tools",
+        "concurrency": 4,
+        "baseline": 563.2856309622215,
+        "candidate": 571.4329893121212,
+        "ratio": 1.0144639910945041
+      },
+      {
+        "category": "long_context",
+        "concurrency": 1,
+        "baseline": 111.78925916287058,
+        "candidate": 265.61076649177755,
+        "ratio": 2.37599540851056
+      },
+      {
+        "category": "long_context",
+        "concurrency": 4,
+        "baseline": 263.9869528925094,
+        "candidate": 547.9573353741431,
+        "ratio": 2.075698550137291
+      },
+      {
+        "category": "penalties",
+        "concurrency": 1,
+        "baseline": 77.27675761456757,
+        "candidate": 251.84548600057,
+        "ratio": 3.2590068964422256
+      },
+      {
+        "category": "penalties",
+        "concurrency": 4,
+        "baseline": 166.351114884089,
+        "candidate": 587.8881647810953,
+        "ratio": 3.5340199865250503
+      }
+    ],
+    "passed": true
+  },
+  "legacy_nonregression_passed": true,
+  "additional_controls_passed": false,
+  "inference_qualified": false,
+  "parser_cpu_regression": {
+    "tests": 279,
+    "failures": 0,
+    "errors": 0
+  },
+  "production_parameters_changed": false,
+  "completed_epoch": 1793856528.038154,
+  "raw_results_sha256": "9f81397e2268aa13d5dbd6d54f077d3cf5315eb0d546e0314f5949d25597f991",
+  "artifact": {
+    "image": "ghcr.io/loon-hejw/sglang-deepseek-v41-flash-sm120-compat:v0.4.4-rc.4",
+    "runtime_image_digest": "sha256:0a32f40290db16a139ee2ac38ec4a8641b7310de07b79a249dd1c11d46a48a92",
+    "model": {
+      "repository": "deepseek-ai/DeepSeek-V4.1-Flash-1017",
+      "revision": "1bae0e1088993b9b82de08f59de5be5a34e42170"
+    },
+    "engine_flags": {
+      "--tp-size": "4",
+      "--ep-size": "2",
+      "--mem-fraction-static": "0.85",
+      "--speculative-algorithm": "DSPARK",
+      "--speculative-dspark-block-size": "5",
+      "--speculative-dspark-sps-autotune": "auto",
+      "--context-length": "1048576",
+      "--max-running-requests": "16",
+      "--chunked-prefill-size": "8192",
+      "--max-prefill-tokens": "8192",
+      "--kv-cache-dtype": "fp8_e4m3",
+      "--attention-backend": "dsv4",
+      "--moe-runner-backend": "flashinfer_mxfp4",
+      "--reasoning-parser": "deepseek-v41",
+      "--tool-call-parser": "deepseekv41",
+      "--sampling-defaults": "openai"
+    },
+    "effective_server_arguments": {
+      "tp_size": 4,
+      "dp_size": 1,
+      "attn_dp_size": 1,
+      "ep_size": 2,
+      "mem_fraction_static": 0.85,
+      "speculative_algorithm": "DSPARK",
+      "speculative_num_draft_tokens": 6,
+      "context_length": 1048576,
+      "max_running_requests": 16,
+      "chunked_prefill_size": 8192,
+      "max_prefill_tokens": 8192,
+      "kv_cache_dtype": "fp8_e4m3",
+      "attention_backend": "dsv4",
+      "moe_runner_backend": "flashinfer_mxfp4",
+      "fp8_gemm_runner_backend": "flashinfer_cutlass",
+      "reasoning_parser": "deepseek-v41",
+      "tool_call_parser": "deepseekv41",
+      "sampling_defaults": "openai"
+    },
+    "serving_arguments_equal_to_production": true,
+    "environment": {
+      "SGLANG_ENABLE_SM120_MXFP8_SKINNY_GEMM": "1",
+      "SGLANG_ENABLE_BF16_SKINNY_LM_HEAD": "1",
+      "SGLANG_DSV41_WO_A_FP8_COPY": "1",
+      "SGLANG_ENABLE_PCIE_IPC_ALLREDUCE": "1",
+      "SGLANG_MAX_NEW_TOKENS_LIMIT": "393216"
+    },
+    "hardware_rows": [
+      "NVIDIA RTX PRO 6000 Blackwell Server Edition, 610.43.02, 97887, 600.00",
+      "NVIDIA RTX PRO 6000 Blackwell Server Edition, 610.43.02, 97887, 600.00",
+      "NVIDIA RTX PRO 6000 Blackwell Server Edition, 610.43.02, 97887, 600.00",
+      "NVIDIA RTX PRO 6000 Blackwell Server Edition, 610.43.02, 97887, 600.00"
+    ],
+    "host_memory_limit_gib": 224,
+    "cpu_quota": 16
+  },
+  "reference_grader_cases": 30,
+  "qualified": false,
+  "request_counts": {
+    "smoke": 5,
+    "selection": 1170,
+    "holdout": 1400,
+    "regression": 204,
+    "code_low_control": 80,
+    "tools_nonstream": 120
+  },
+  "speed_batches": 140,
+  "operational_outcome": {
+    "baseline_unchanged": true,
+    "baseline_healthy": true,
+    "candidate_stopped": true,
+    "0731_stopped": true
+  },
+  "startup_observations_seconds": [
+    292.93235818482935,
+    282.8449131445959,
+    282.93654567189515
+  ],
+  "startup_observation_scope": "Same candidate container, cache initially copied from the existing service; operational observations, not a startup benchmark.",
+  "preflight_note": "API smoke previously required every arithmetic answer to be correct. One no-thinking draw was wrong despite valid protocol and effective mode. Startup gate now checks API/mode only; all original observations retained. No selection/holdout results existed; quality gates unchanged.",
+  "default_encoding_check": {
+    "at": 1793846590.5748663,
+    "scope": "One frozen selection prompt per category; native tokenizer endpoint, no model generation or retuning",
+    "results": [
+      {
+        "category": "reasoning",
+        "case": "reasoning_s_weighted_intervals_00",
+        "encodings": {
+          "primary_baseline": {
+            "count": 139,
+            "tokens_sha256": "caff8984110240b244aa474da789a20963a2b67549b8cb742d4e4813881c4bdc"
+          },
+          "omitted": {
+            "count": 113,
+            "tokens_sha256": "c845de3a16cccce73e44ca23537d669ab7f5b998821bf30f1ea90ca38e8ca4c3"
+          },
+          "explicit_none": {
+            "count": 113,
+            "tokens_sha256": "c845de3a16cccce73e44ca23537d669ab7f5b998821bf30f1ea90ca38e8ca4c3"
+          },
+          "explicit_high": {
+            "count": 139,
+            "tokens_sha256": "caff8984110240b244aa474da789a20963a2b67549b8cb742d4e4813881c4bdc"
+          }
+        },
+        "omitted_equals_none": true,
+        "primary_equals_omitted": false
+      },
+      {
+        "category": "coding",
+        "case": "coding_s_reconcile_00",
+        "encodings": {
+          "primary_baseline": {
+            "count": 110,
+            "tokens_sha256": "a9b8dc5ce9093596823bb4e00094fc60e4789cf89acfb75c93fb1882d721058a"
+          },
+          "omitted": {
+            "count": 84,
+            "tokens_sha256": "80a2ab3bdec514ec630fad6d6ca8a4333703909ba70beac847fac5696e7c08f2"
+          },
+          "explicit_none": {
+            "count": 84,
+            "tokens_sha256": "80a2ab3bdec514ec630fad6d6ca8a4333703909ba70beac847fac5696e7c08f2"
+          },
+          "explicit_high": {
+            "count": 110,
+            "tokens_sha256": "ac637c597bcffe68309dff555294658cfa9a80524f8aacdbc1410854b4b243a5"
+          }
+        },
+        "omitted_equals_none": true,
+        "primary_equals_omitted": false
+      },
+      {
+        "category": "instructions",
+        "case": "instructions_s_filter_sort_00",
+        "encodings": {
+          "primary_baseline": {
+            "count": 300,
+            "tokens_sha256": "9329b37cc3e4257b413badbe59d150671f939036e6224e138c2496ee08b5584b"
+          },
+          "omitted": {
+            "count": 300,
+            "tokens_sha256": "9329b37cc3e4257b413badbe59d150671f939036e6224e138c2496ee08b5584b"
+          },
+          "explicit_none": {
+            "count": 300,
+            "tokens_sha256": "9329b37cc3e4257b413badbe59d150671f939036e6224e138c2496ee08b5584b"
+          },
+          "explicit_high": {
+            "count": 326,
+            "tokens_sha256": "ef244742d9fdf507ebfdbad16cf8de1eeca46f48fe983ad80c7a4758da466f2f"
+          }
+        },
+        "omitted_equals_none": true,
+        "primary_equals_omitted": true
+      },
+      {
+        "category": "structured",
+        "case": "structured_s_money_extract_00",
+        "encodings": {
+          "primary_baseline": {
+            "count": 160,
+            "tokens_sha256": "69aaf641ad126e11d2e02914ff39636f4571cd983cb33b6b955f015631f7c8e4"
+          },
+          "omitted": {
+            "count": 160,
+            "tokens_sha256": "69aaf641ad126e11d2e02914ff39636f4571cd983cb33b6b955f015631f7c8e4"
+          },
+          "explicit_none": {
+            "count": 160,
+            "tokens_sha256": "69aaf641ad126e11d2e02914ff39636f4571cd983cb33b6b955f015631f7c8e4"
+          },
+          "explicit_high": {
+            "count": 186,
+            "tokens_sha256": "61320616c34551551a11961bf357732bc9d11ed7f15ebf39511c950ae33d9a51"
+          }
+        },
+        "omitted_equals_none": true,
+        "primary_equals_omitted": true
+      },
+      {
+        "category": "tools",
+        "case": "tools_s_marker_copy_00",
+        "encodings": {
+          "primary_baseline": {
+            "count": 360,
+            "tokens_sha256": "4983744ad7859842c351eb137e7dc5fbc9f9dd8f189280161c021f77f4d72e01"
+          },
+          "omitted": {
+            "count": 360,
+            "tokens_sha256": "4983744ad7859842c351eb137e7dc5fbc9f9dd8f189280161c021f77f4d72e01"
+          },
+          "explicit_none": {
+            "count": 360,
+            "tokens_sha256": "4983744ad7859842c351eb137e7dc5fbc9f9dd8f189280161c021f77f4d72e01"
+          },
+          "explicit_high": {
+            "count": 384,
+            "tokens_sha256": "7e2a437154c0adf9ef38666dbbff7dc42b7a4db6e9a818313bb449a66f023441"
+          }
+        },
+        "omitted_equals_none": true,
+        "primary_equals_omitted": true
+      },
+      {
+        "category": "long_context",
+        "case": "long_context_s_version_lookup_00",
+        "encodings": {
+          "primary_baseline": {
+            "count": 32739,
+            "tokens_sha256": "b6f0bc925595a5358128e7e58b8000ead06b55d887891e1d66f45224f1ccd99c"
+          },
+          "omitted": {
+            "count": 32739,
+            "tokens_sha256": "b6f0bc925595a5358128e7e58b8000ead06b55d887891e1d66f45224f1ccd99c"
+          },
+          "explicit_none": {
+            "count": 32739,
+            "tokens_sha256": "b6f0bc925595a5358128e7e58b8000ead06b55d887891e1d66f45224f1ccd99c"
+          },
+          "explicit_high": {
+            "count": 32765,
+            "tokens_sha256": "d77eb7c612ffbe3e84ddb5c35d0f61bb23f49ecc8c3cfd70cd6744f21ae052f7"
+          }
+        },
+        "omitted_equals_none": true,
+        "primary_equals_omitted": true
+      },
+      {
+        "category": "penalties",
+        "case": "penalties_s_group_sum_00",
+        "encodings": {
+          "primary_baseline": {
+            "count": 182,
+            "tokens_sha256": "af68494abd32b28378e4a4a3fc24b95a04884f4cd3d9360f4d6ae45c21736d67"
+          },
+          "omitted": {
+            "count": 182,
+            "tokens_sha256": "af68494abd32b28378e4a4a3fc24b95a04884f4cd3d9360f4d6ae45c21736d67"
+          },
+          "explicit_none": {
+            "count": 182,
+            "tokens_sha256": "af68494abd32b28378e4a4a3fc24b95a04884f4cd3d9360f4d6ae45c21736d67"
+          },
+          "explicit_high": {
+            "count": 208,
+            "tokens_sha256": "c1b32243d20a9f8bdbe3e3659959b6f0b9c88650fb5cf3b4f128ae50ccce2163"
+          }
+        },
+        "omitted_equals_none": true,
+        "primary_equals_omitted": true
+      }
+    ]
+  },
+  "concurrent_grader_validation": {
+    "same_case_and_code_parallel": 4,
+    "passed": true,
+    "results": [
+      {
+        "tests": 4,
+        "passed": 4
+      },
+      {
+        "tests": 4,
+        "passed": 4
+      },
+      {
+        "tests": 4,
+        "passed": 4
+      },
+      {
+        "tests": 4,
+        "passed": 4
+      }
+    ]
+  },
+  "continuation_note": "The first 217 holdout observations preceded a checkpoint restart to isolate CPU grading containers; the remaining observations followed it. Same model image, serving arguments, selected profiles and scoring rules. Existing scores were inherited unchanged; no completed request was retried.",
+  "holdout_segment_counts": {
+    "before_grader_isolation_fix": {
+      "baseline": 109,
+      "candidate": 108
+    },
+    "after_grader_isolation_fix": {
+      "baseline": 591,
+      "candidate": 592
+    }
+  },
+  "observed_max_input_tokens": 262132,
+  "holdout_latency": {
+    "coding": {
+      "baseline": {
+        "median_s": 10.742148717865348,
+        "p95_s": 35.491775133647025,
+        "max_s": 49.50372900534421,
+        "median_nonreasoning_completion_tokens": 335.0,
+        "median_reasoning_tokens": 2253.5
+      },
+      "candidate": {
+        "median_s": 10.9367870464921,
+        "p95_s": 26.89866618439555,
+        "max_s": 53.25963476207107,
+        "median_nonreasoning_completion_tokens": 331.5,
+        "median_reasoning_tokens": 2099.0
+      }
+    },
+    "instructions": {
+      "baseline": {
+        "median_s": 0.3691106317564845,
+        "p95_s": 0.7956558167934418,
+        "max_s": 1.1648348830640316,
+        "median_nonreasoning_completion_tokens": 23.0,
+        "median_reasoning_tokens": 0.0
+      },
+      "candidate": {
+        "median_s": 1.6697115683928132,
+        "p95_s": 8.390473862178624,
+        "max_s": 10.233778764493763,
+        "median_nonreasoning_completion_tokens": 21.0,
+        "median_reasoning_tokens": 283.5
+      }
+    },
+    "long_context": {
+      "baseline": {
+        "median_s": 1.4958011503331363,
+        "p95_s": 13.671337563544512,
+        "max_s": 13.788353860378265,
+        "median_nonreasoning_completion_tokens": 14.0,
+        "median_reasoning_tokens": 0.0
+      },
+      "candidate": {
+        "median_s": 2.289887764956802,
+        "p95_s": 14.441164179705083,
+        "max_s": 20.59994020871818,
+        "median_nonreasoning_completion_tokens": 13.0,
+        "median_reasoning_tokens": 211.0
+      }
+    },
+    "penalties": {
+      "baseline": {
+        "median_s": 0.5654527992010117,
+        "p95_s": 0.9012019438669086,
+        "max_s": 0.9855580413714051,
+        "median_nonreasoning_completion_tokens": 111.0,
+        "median_reasoning_tokens": 0.0
+      },
+      "candidate": {
+        "median_s": 4.007127209100872,
+        "p95_s": 14.349756839685142,
+        "max_s": 16.859196866862476,
+        "median_nonreasoning_completion_tokens": 14.0,
+        "median_reasoning_tokens": 849.0
+      }
+    },
+    "reasoning": {
+      "baseline": {
+        "median_s": 6.596462030429393,
+        "p95_s": 27.042594155296683,
+        "max_s": 34.41584463510662,
+        "median_nonreasoning_completion_tokens": 10.0,
+        "median_reasoning_tokens": 1411.5
+      },
+      "candidate": {
+        "median_s": 6.488777149934322,
+        "p95_s": 28.485921800136566,
+        "max_s": 38.065565819852054,
+        "median_nonreasoning_completion_tokens": 10.0,
+        "median_reasoning_tokens": 1558.5
+      }
+    },
+    "structured": {
+      "baseline": {
+        "median_s": 0.6628351709805429,
+        "p95_s": 1.1402851399034262,
+        "max_s": 15.137366507202387,
+        "median_nonreasoning_completion_tokens": 131.0,
+        "median_reasoning_tokens": 0.0
+      },
+      "candidate": {
+        "median_s": 3.0840075304731727,
+        "p95_s": 6.291283406317234,
+        "max_s": 11.675982186570764,
+        "median_nonreasoning_completion_tokens": 131.0,
+        "median_reasoning_tokens": 547.0
+      }
+    },
+    "tools": {
+      "baseline": {
+        "median_s": 0.9671475570648909,
+        "p95_s": 12.024833008646965,
+        "max_s": 16.564222157932818,
+        "median_nonreasoning_completion_tokens": 188.0,
+        "median_reasoning_tokens": 0.0
+      },
+      "candidate": {
+        "median_s": 0.9439397864043713,
+        "p95_s": 11.617662844248116,
+        "max_s": 12.866143046878278,
+        "median_nonreasoning_completion_tokens": 188.0,
+        "median_reasoning_tokens": 0.0
+      }
+    }
+  }
+}
